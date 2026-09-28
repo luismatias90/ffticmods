@@ -17,6 +17,7 @@ class Settings:
     jp_cost: int = DEFAULT_JP_COST
     change_class: bool = True
     class_job_id: Optional[int] = None
+    custom_class_file: str = ""  # arquivo na biblioteca; vazio = classe do jogo
     change_bag: bool = False
     bag_items: list = field(default_factory=list)  # [[item_id, quantidade], ...]
     language: str = ""  # "pt" ou "en"; vazio até o assistente perguntar

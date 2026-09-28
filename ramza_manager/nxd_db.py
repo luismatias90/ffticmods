@@ -213,14 +213,24 @@ def apply_class_edits(
     jp_cost: int,
     source_job_id: int,
     target_job_ids: Iterable[int],
+    custom_name: Optional[str] = None,
+    custom_description: str = "",
+    skillset_name: Optional[str] = None,
+    target_command_ids: Iterable[int] = (),
 ) -> list[str]:
     """
     - Ability-<idioma>: JpCost das habilidades do skillset -> jp_cost.
     - Job-<idioma>: nas linhas do Ramza, `jobcommand+Id` e nome/descrição da
       classe escolhida. O resto da linha (retrato, tipo, ajuda) fica do Ramza.
+
+    Classe customizada (`target_command_ids` preenchido): o Ramza mantém os
+    próprios skillsets, que ganham o nome `skillset_name` em
+    JobCommand-<idioma>; o nome da classe (e a descrição, se houver) é
+    `custom_name` em todos os idiomas.
     """
     ability_ids = sorted(set(ability_ids))
     target_job_ids = list(target_job_ids)
+    target_command_ids = list(target_command_ids)
     low, high = jp_cost & 0xFF, (jp_cost >> 8) & 0xFF
     changed: list[str] = []
     present = _tables(con)
@@ -242,13 +252,25 @@ def apply_class_edits(
             if row is None:
                 continue
             values = dict(zip(cols, row))
-            if not values.get("Name"):
+            if custom_name:
+                values["Name"] = values["Unknown4"] = custom_name
+                if custom_description:
+                    values["Description"] = values["Unknown6"] = custom_description
+            elif not values.get("Name"):
                 # Idioma sem tradução para esta classe: mantém o texto do
                 # Ramza, troca só o skillset.
                 values = {"jobcommand+Id": values["jobcommand+Id"]}
+            if target_command_ids:
+                values.pop("jobcommand+Id")  # continua o skillset próprio do Ramza
             assign = ", ".join(f'"{c}" = ?' for c in values)
             for target in target_job_ids:
                 con.execute(f'UPDATE "{table}" SET {assign} WHERE Key = ?', [*values.values(), target])
+            changed.append(table)
+
+        table = f"JobCommand-{lang}"
+        if table in present and target_command_ids and skillset_name:
+            marks = ",".join("?" * len(target_command_ids))
+            con.execute(f'UPDATE "{table}" SET Name = ? WHERE Key IN ({marks})', [skillset_name, *target_command_ids])
             changed.append(table)
     return changed
 

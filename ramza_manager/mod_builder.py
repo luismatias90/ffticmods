@@ -1,7 +1,8 @@
 """
 Gera o mod Reloaded-II do Solo Ramza Manager. Duas partes independentes:
 
-1. Classe: transforma as classes do Ramza (Jobs 1, 2 e 3) na classe escolhida.
+1. Classe: transforma as classes do Ramza (Jobs 1, 2 e 3) na classe escolhida,
+   ou numa classe customizada (classe base + skillset montado à mão).
 2. Bolsa: troca o conteúdo do pacote de bônus da Deluxe Edition pelos itens
    escolhidos (o jogo entrega esse pacote no inventário).
 
@@ -9,10 +10,12 @@ Estrutura gerada (mesmo formato usado pelo Mod Studio / fftivc.utility.modloader
 
   <ModId>/ModConfig.json
   <ModId>/FFTIVC/tables/enhanced/JobData.xml      Jobs 1-3 = classe escolhida
+  <ModId>/FFTIVC/tables/enhanced/JobCommandData.xml   skillsets 25-27 (classe customizada)
   <ModId>/FFTIVC/tables/enhanced/AbilityData.xml  tira DontLearnWithJP (se houver)
   <ModId>/FFTIVC/tables/enhanced/SpawnData.xml    equipamento inicial (se preciso)
   <ModId>/FFTIVC/data/enhanced/nxd/ability.*.nxd  JP das skills da classe
   <ModId>/FFTIVC/data/enhanced/nxd/job.*.nxd      nome + skillset nos Jobs 1-3
+  <ModId>/FFTIVC/data/enhanced/nxd/jobcommand.*.nxd   nome do skillset customizado
   <ModId>/FFTIVC/data/enhanced/nxd/systembonus*.nxd   conteúdo do pacote de bônus
 
 Nada de nível, EXP, atributos base ou história é tocado.
@@ -29,6 +32,7 @@ from xml.sax.saxutils import escape
 
 from . import __version__
 from .class_catalog import RAMZA_JOB_IDS
+from .custom_class import MAX_ACTIONS, MAX_RSM, CustomClass
 from .nxd_db import MAX_QUANTITY, BagItem
 from .tables import EMPTY_ITEM, Job, ReferenceTables
 
@@ -37,6 +41,8 @@ MOD_NAME = "Solo Ramza Manager"
 MODLOADER_ID = "fftivc.utility.modloader"
 GAME_MODE = "enhanced"
 RAMZA_SPAWN_ID = 2
+# Skillset próprio de cada Job do Ramza (Mettle). Só esses Jobs os usam.
+RAMZA_COMMAND_IDS = {1: 25, 2: 26, 3: 27}
 DEFAULT_JP_COST = 0
 
 # Campos que continuam sendo os do Ramza:
@@ -69,6 +75,13 @@ class BuildPlan:
     ability_ids: list[int]
     spawn_changes: dict[str, tuple[int, int]] = field(default_factory=dict)  # slot -> (antes, depois)
     bag: Optional[list[BagItem]] = None  # None = não mexe no pacote de bônus
+    custom: Optional[CustomClass] = None  # classe customizada (skillset nos 25-27)
+    command_xml: Optional[str] = None
+
+    @property
+    def ramza_command_ids(self) -> list[int]:
+        """Skillsets próprios do Ramza reescritos pela classe customizada."""
+        return sorted(RAMZA_COMMAND_IDS.values()) if self.custom else []
 
     @property
     def is_empty(self) -> bool:
@@ -96,11 +109,26 @@ def _table_xml(root: str, tag: str, entries: list[dict[str, str]], note: str) ->
     return "\n".join(lines)
 
 
-def _job_entries(source: Job) -> list[dict[str, str]]:
+def _job_entries(source: Job, keep_ramza_command: bool = False) -> list[dict[str, str]]:
     entries = []
     for job_id in RAMZA_JOB_IDS:
         entry = {"Id": str(job_id)}
         entry.update({k: v for k, v in source.fields.items() if k not in KEEP_RAMZA_FIELDS})
+        if keep_ramza_command:
+            entry["JobCommandId"] = str(RAMZA_COMMAND_IDS[job_id])
+        entries.append(entry)
+    return entries
+
+
+def _command_entries(custom: CustomClass) -> list[dict[str, str]]:
+    """Os três skillsets do Ramza com a lista da classe customizada (slots vazios = 0)."""
+    entries = []
+    for cmd_id in sorted(RAMZA_COMMAND_IDS.values()):
+        entry = {"Id": str(cmd_id)}
+        for i in range(MAX_ACTIONS):
+            entry[f"AbilityId{i + 1}"] = str(custom.actions[i] if i < len(custom.actions) else 0)
+        for i in range(MAX_RSM):
+            entry[f"ReactionSupportMovementId{i + 1}"] = str(custom.rsm[i] if i < len(custom.rsm) else 0)
         entries.append(entry)
     return entries
 
@@ -154,19 +182,33 @@ def plan_build(
     source_job_id: Optional[int],
     class_name: Optional[str],
     bag: Optional[list[BagItem]] = None,
+    custom: Optional[CustomClass] = None,
 ) -> BuildPlan:
-    """Calcula tudo que vai no mod (função pura, sem tocar em disco)."""
+    """
+    Calcula tudo que vai no mod (função pura, sem tocar em disco). Com
+    `custom`, a classe base e o nome vêm dela e `source_job_id`/`class_name`
+    são ignorados.
+    """
     bag = validate_bag(tables, bag) if bag else None
+    if custom is not None:
+        source_job_id, class_name = custom.base_job, custom.name
     if source_job_id is None:
         return BuildPlan(None, None, None, None, None, [], {}, bag)
     if source_job_id in RAMZA_JOB_IDS:
         raise ValueError("Escolha uma classe diferente das classes originais do Ramza.")
     source = tables.jobs[source_job_id]
-    command = tables.command_for(source)
-    ability_ids = command.all_ability_ids if command else []
+    if custom is not None:
+        source = custom.effective_job(tables)  # base + equipamentos/inatas/atributos da classe
+        ability_ids = custom.ability_ids
+    else:
+        command = tables.command_for(source)
+        ability_ids = command.all_ability_ids if command else []
 
     note = f"Gerado pelo Solo Ramza Manager {__version__}: Ramza = {class_name} (Job {source_job_id})"
-    job_xml = _table_xml("JobTable", "Job", _job_entries(source), note)
+    job_xml = _table_xml("JobTable", "Job", _job_entries(source, custom is not None), note)
+    command_xml = None
+    if custom is not None:
+        command_xml = _table_xml("JobCommandTable", "JobCommand", _command_entries(custom), note)
 
     ability_entries = []
     for ab_id in ability_ids:
@@ -183,7 +225,8 @@ def plan_build(
         entry.update({slot: str(new) for slot, (_old, new) in changes.items()})
         spawn_xml = _table_xml("SpawnTable", "Spawn", [entry], note)
 
-    return BuildPlan(source, class_name, job_xml, ability_xml, spawn_xml, ability_ids, changes, bag)
+    return BuildPlan(source, class_name, job_xml, ability_xml, spawn_xml, ability_ids, changes, bag,
+                     custom, command_xml)
 
 
 # ---------------------------------------------------------------------------
@@ -192,7 +235,10 @@ def plan_build(
 
 def mod_config(plan: BuildPlan) -> dict:
     parts = []
-    if plan.source_job is not None:
+    if plan.custom is not None:
+        parts.append(f"Ramza joga como {plan.class_name}, classe customizada (base: Job {plan.source_job.id}), "
+                     f"skillset {plan.custom.skillset} com {len(plan.ability_ids)} skills.")
+    elif plan.source_job is not None:
         parts.append(f"Ramza joga como {plan.class_name} (Job {plan.source_job.id}), todas as skills da classe liberadas.")
     if plan.bag:
         parts.append(f"Bônus da Deluxe Edition trocado por {len(plan.bag)} item(ns) escolhido(s).")
@@ -200,6 +246,7 @@ def mod_config(plan: BuildPlan) -> dict:
         "ClassName": plan.class_name,
         "SourceJobId": plan.source_job.id if plan.source_job else None,
         "BagItems": [[b.item_id, b.quantity] for b in plan.bag] if plan.bag else [],
+        "CustomClass": plan.custom.to_dict() if plan.custom else None,
     }
     return {
         "ModId": MOD_ID,
@@ -230,6 +277,7 @@ def write_mod_folder(plan: BuildPlan, mod_root: Path, nxd_files: list[Path]) -> 
     tables_dir = mod_root / "FFTIVC" / "tables" / GAME_MODE
     for filename, text in (
         ("JobData.xml", plan.job_xml),
+        ("JobCommandData.xml", plan.command_xml),
         ("AbilityData.xml", plan.ability_xml),
         ("SpawnData.xml", plan.spawn_xml),
     ):

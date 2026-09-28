@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import dataclasses
 import html
 import sys
 import traceback
@@ -17,11 +18,16 @@ from PySide6.QtWidgets import (
     QTextBrowser, QVBoxLayout, QWidget,
 )
 
-from . import __version__, class_catalog, game_install, i18n, mod_builder, nxd_db, paths, prereqs, reloaded, theme
+from . import (
+    __version__, class_catalog, custom_class, game_install, i18n, mod_builder, nxd_db, paths, prereqs, reloaded,
+    theme,
+)
 from .class_catalog import ClassOption
+from .class_editor import CustomClassDialog
+from .custom_class import CustomClass, CustomClassError
 from .nxd_db import MAX_QUANTITY, BagItem
 from .settings import Settings
-from .tables import ReferenceTables, load_reference_tables
+from .tables import Job, ReferenceTables, load_reference_tables
 from .wizard import SetupWizard
 
 URL_RELOADED = "https://github.com/Reloaded-Project/Reloaded-II/releases/latest"
@@ -64,6 +70,7 @@ class MainWindow(QMainWindow):
         self.tables: ReferenceTables = load_reference_tables(paths.data_dir())
         self.catalog: list[ClassOption] = []
         self.ability_names: dict[int, str] = {}
+        self.command_names: dict[int, str] = {}
         self.item_names: dict[int, str] = {}
         self.jp_costs: dict[int, int] = {}
         self.deluxe_default: list[BagItem] = []
@@ -240,6 +247,13 @@ class MainWindow(QMainWindow):
         self.search.setPlaceholderText(t("search_class"))
         for index, key in enumerate(self.lists):
             self.tabs.setTabText(index, class_catalog.category_labels()[key])
+        self.tabs.setTabText(self._custom_tab_index(), t("cat_custom"))
+        self.btn_cc_new.setText(t("cc_btn_new"))
+        self.btn_cc_edit.setText(t("cc_btn_edit"))
+        self.btn_cc_dup.setText(t("cc_btn_dup"))
+        self.btn_cc_delete.setText(t("cc_btn_delete"))
+        self.btn_cc_import.setText(t("cc_btn_import"))
+        self.btn_cc_export.setText(t("cc_btn_export"))
         self.chk_bag.setText(t("chk_bag"))
         self.bag_help.setText(t("bag_help"))
         self.item_search.setPlaceholderText(t("search_item"))
@@ -321,6 +335,7 @@ class MainWindow(QMainWindow):
             lst.currentItemChanged.connect(self.show_preview)
             self.lists[key] = lst
             self.tabs.addTab(lst, label)
+        self.tabs.addTab(self._build_custom_page(), "")
         self.tabs.currentChanged.connect(lambda _i: self.show_preview())
         left_layout.addWidget(self.tabs)
         self.class_body.addWidget(left)
@@ -329,6 +344,35 @@ class MainWindow(QMainWindow):
         self.class_body.setSizes([420, 730])
         self.class_body.setEnabled(self.settings.change_class)
         layout.addWidget(self.class_body, 1)
+        return page
+
+    def _build_custom_page(self) -> QWidget:
+        """Sub-aba 'Minhas classes': biblioteca de classes customizadas."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        self.custom_list = QListWidget()
+        self.custom_list.currentItemChanged.connect(self.show_preview)
+        self.custom_list.itemDoubleClicked.connect(lambda _i: self.edit_custom())
+        layout.addWidget(self.custom_list, 1)
+        grid = QGridLayout()
+        self.btn_cc_new = QPushButton()
+        self.btn_cc_new.clicked.connect(self.new_custom)
+        self.btn_cc_edit = QPushButton()
+        self.btn_cc_edit.clicked.connect(self.edit_custom)
+        self.btn_cc_dup = QPushButton()
+        self.btn_cc_dup.clicked.connect(self.duplicate_custom)
+        self.btn_cc_delete = QPushButton()
+        self.btn_cc_delete.clicked.connect(self.delete_custom)
+        self.btn_cc_import = QPushButton()
+        self.btn_cc_import.clicked.connect(self.import_custom)
+        self.btn_cc_export = QPushButton()
+        self.btn_cc_export.clicked.connect(self.export_custom)
+        buttons = [self.btn_cc_new, self.btn_cc_edit, self.btn_cc_dup,
+                   self.btn_cc_import, self.btn_cc_export, self.btn_cc_delete]
+        for index, btn in enumerate(buttons):
+            grid.addWidget(btn, index // 3, index % 3)
+        layout.addLayout(grid)
         return page
 
     def _build_bag_tab(self) -> QWidget:
@@ -485,6 +529,7 @@ class MainWindow(QMainWindow):
             db = paths.vanilla_sqlite()
             job_names = nxd_db.read_names(db, "Job")
             command_names = nxd_db.read_names(db, "JobCommand")
+            self.command_names = command_names
             self.ability_names = nxd_db.read_names(db, "Ability")
             self.item_names = nxd_db.read_names(db, "Item")
             self.jp_costs = nxd_db.read_jp_costs(db)
@@ -527,9 +572,62 @@ class MainWindow(QMainWindow):
                 item.setData(Qt.UserRole, option)
                 item.setToolTip(i18n.t("tip_job", job=option.job_id, cmd=option.job.job_command_id))
                 lst.addItem(item)
+        self.fill_custom_list()
+
+    def fill_custom_list(self, select: Optional[Path] = None) -> None:
+        needle = self.search.text().strip().lower()
+        current = select or self._selected_custom_path()
+        self.custom_list.blockSignals(True)
+        self.custom_list.clear()
+        for path, klass in custom_class.list_library(paths.classes_dir()):
+            label = i18n.t("cc_label", name=klass.name, skillset=klass.skillset,
+                           base=self.job_display_name(klass.base_job), n=len(klass.ability_ids))
+            if needle and needle not in label.lower():
+                continue
+            item = QListWidgetItem(label)
+            item.setData(Qt.UserRole, (path, klass))
+            item.setToolTip(str(path))
+            self.custom_list.addItem(item)
+            if current and path == current:
+                self.custom_list.setCurrentItem(item)
+        self.custom_list.blockSignals(False)
         self.show_preview()
 
+    def _custom_tab_index(self) -> int:
+        return len(self.lists)
+
+    def on_custom_tab(self) -> bool:
+        return self.tabs.currentIndex() == self._custom_tab_index()
+
+    def _selected_custom_path(self) -> Optional[Path]:
+        item = self.custom_list.currentItem()
+        return item.data(Qt.UserRole)[0] if item else None
+
+    def selected_custom(self) -> Optional[tuple[Path, CustomClass]]:
+        if not self.on_custom_tab():
+            return None
+        item = self.custom_list.currentItem()
+        return item.data(Qt.UserRole) if item else None
+
+    def job_display_name(self, job_id: int) -> str:
+        for option in self.catalog:
+            if option.job_id == job_id:
+                return option.name
+        job = self.tables.jobs.get(job_id)
+        return job.name if job and job.name else f"Job {job_id}"
+
+    def command_name(self, cmd_id: int) -> str:
+        command = self.tables.commands.get(cmd_id)
+        return (self.command_names.get(cmd_id) or "").strip() or (command.name if command else "") or f"#{cmd_id}"
+
     def _select_saved_class(self) -> None:
+        if self.settings.custom_class_file:
+            target = paths.classes_dir() / self.settings.custom_class_file
+            for row in range(self.custom_list.count()):
+                if self.custom_list.item(row).data(Qt.UserRole)[0] == target:
+                    self.tabs.setCurrentIndex(self._custom_tab_index())
+                    self.custom_list.setCurrentRow(row)
+                    return
         job_id = self.settings.class_job_id
         if job_id is None:
             return
@@ -541,18 +639,72 @@ class MainWindow(QMainWindow):
                     return
 
     def selected_option(self) -> Optional[ClassOption]:
+        if self.on_custom_tab():
+            return None
         key = list(self.lists)[self.tabs.currentIndex()]
         item = self.lists[key].currentItem()
         return item.data(Qt.UserRole) if item else None
 
     def show_preview(self, *_args) -> None:
+        if self.on_custom_tab():
+            selected = self.selected_custom()
+            if selected is None:
+                self.preview.setHtml(self._page(i18n.t("cc_preview_empty")))
+            else:
+                self._show_custom_preview(selected[1])
+            return
         option = self.selected_option()
         if option is None:
             self.preview.setHtml(self._page(i18n.t("preview_empty")))
             return
         job = option.job
-        plan = mod_builder.plan_build(self.tables, job.id, option.name)
         command = self.tables.command_for(job)
+        header = [f"<h2>{html.escape(option.name)}</h2>"]
+        if option.experimental:
+            header.append(i18n.t("warn_experimental"))
+        self._render_preview(
+            header, job, option.skillset_name or i18n.t("own_skillset"),
+            command.action_ids if command else [], command.rsm_ids if command else [],
+            mod_builder.plan_build(self.tables, job.id, option.name),
+        )
+
+    def _show_custom_preview(self, klass: CustomClass) -> None:
+        esc = html.escape
+        header = [f"<h2>{esc(klass.name)} <span class='muted'>✦</span></h2>"]
+        if not custom_class.is_valid_base_job(self.tables, klass.base_job):
+            header.append(f"<p class='warn'>{esc(i18n.t('cc_err_base', job=klass.base_job))}</p>")
+            self.preview.setHtml(self._page("".join(header)))
+            return
+        header.append(i18n.t("cc_preview_meta", base=esc(self.job_display_name(klass.base_job)),
+                             author=esc(klass.author or i18n.t("cc_no_author"))))
+        if klass.description:
+            header.append(f"<p><i>{esc(klass.description)}</i></p>")
+        if class_catalog.category_for(klass.base_job) == class_catalog.CATEGORY_BOSS:
+            header.append(i18n.t("warn_experimental"))
+        special = custom_class.special_abilities(self.tables, klass)
+        if special:
+            names = esc(", ".join(self.ability_name(i) for i in special))
+            header.append(f"<p class='warn'>{i18n.t('cc_special_warn', names=names)}</p>")
+        changed = self._changed_fields(klass)
+        if changed:
+            header.append(i18n.t("cc_changed", names=esc(", ".join(changed))))
+        self._render_preview(header, klass.effective_job(self.tables), klass.skillset, klass.actions, klass.rsm,
+                             mod_builder.plan_build(self.tables, None, None, custom=klass))
+
+    @staticmethod
+    def _changed_fields(klass: CustomClass) -> list[str]:
+        names = [f"{stat} ×" for stat in custom_class.STATS if stat in klass.multipliers]
+        names += [f"{stat} growth" for stat in custom_class.STATS if stat in klass.growths]
+        names += [label for label, value in (("Move", klass.move), ("Jump", klass.jump), ("C-Ev", klass.evasion))
+                  if value is not None]
+        if klass.innates is not None:
+            names.append(i18n.t("cc_field_innates"))
+        if klass.equip is not None:
+            names.append(i18n.t("cc_field_equip"))
+        return names
+
+    def _render_preview(self, header: list[str], job: Job, skillset_name: str, action_ids: list[int],
+                        rsm_ids: list[int], plan: mod_builder.BuildPlan) -> None:
         jp = self.jp_spin.value()
         esc = html.escape
 
@@ -574,16 +726,14 @@ class MainWindow(QMainWindow):
             for key, label in STAT_ROWS
         )
         innate = ", ".join(esc(self.ability_name(i)) for i in job.innate_ability_ids) or i18n.t("none_f")
-        parts = [f"<h2>{esc(option.name)}</h2>"]
-        if option.experimental:
-            parts.append(i18n.t("warn_experimental"))
+        parts = list(header)
         parts.append(i18n.t(
             "preview_skillset",
-            name=esc(option.skillset_name or i18n.t("own_skillset")),
+            name=esc(skillset_name),
             move=f.get("Move"), jump=f.get("Jump"), evade=f.get("CharacterEvasion"), job=job.id,
         ))
-        parts.append(i18n.t("h_action") + ability_rows(command.action_ids if command else []))
-        parts.append(i18n.t("h_rsm") + ability_rows(command.rsm_ids if command else []))
+        parts.append(i18n.t("h_action") + ability_rows(action_ids))
+        parts.append(i18n.t("h_rsm") + ability_rows(rsm_ids))
         parts.append(i18n.t("innate", names=innate))
         parts.append(i18n.t("equip", names=esc(", ".join(job.equippable) or i18n.t("none_m"))))
         parts.append(i18n.t("h_stats", rows=stats))
@@ -597,6 +747,93 @@ class MainWindow(QMainWindow):
             )
             parts.append(f"{i18n.t('h_gear')}<ul>{changes}</ul>")
         self.preview.setHtml(self._page("".join(parts)))
+
+    # ------------------------------------------------------ custom classes
+
+    def _editor(self, existing: Optional[CustomClass]) -> Optional[CustomClass]:
+        dlg = CustomClassDialog(self.tables, self.catalog, self.ability_name, self.command_name, existing, self)
+        if dlg.exec() != QDialog.Accepted:
+            return None
+        return dlg.result_class()
+
+    def _after_library_change(self, path: Optional[Path]) -> None:
+        self.tabs.setCurrentIndex(self._custom_tab_index())
+        self.fill_custom_list(select=path)
+
+    def new_custom(self) -> None:
+        klass = self._editor(None)
+        if klass:
+            path = custom_class.save_file(klass, custom_class.free_path(paths.classes_dir(), klass.name))
+            self._after_library_change(path)
+
+    def edit_custom(self) -> None:
+        selected = self.selected_custom()
+        if selected is None:
+            return
+        path, klass = selected
+        edited = self._editor(klass)
+        if edited:
+            custom_class.save_file(edited, path)
+            self._after_library_change(path)
+
+    def duplicate_custom(self) -> None:
+        selected = self.selected_custom()
+        if selected is None:
+            return
+        klass = selected[1]
+        name = i18n.t("cc_copy_name", name=klass.name)[:custom_class.MAX_NAME]
+        copy = dataclasses.replace(klass, name=name, actions=list(klass.actions), rsm=list(klass.rsm))
+        path = custom_class.save_file(copy, custom_class.free_path(paths.classes_dir(), copy.name))
+        self._after_library_change(path)
+
+    def delete_custom(self) -> None:
+        selected = self.selected_custom()
+        if selected is None:
+            return
+        path, klass = selected
+        answer = QMessageBox.question(self, i18n.t("cc_delete_title"), i18n.t("cc_delete_body", name=klass.name))
+        if answer != QMessageBox.Yes:
+            return
+        path.unlink(missing_ok=True)
+        if self.settings.custom_class_file == path.name:
+            self.settings.custom_class_file = ""
+            self.settings.save()
+        self._after_library_change(None)
+
+    def import_custom(self) -> None:
+        files, _ = QFileDialog.getOpenFileNames(self, i18n.t("cc_import_title"), "", i18n.t("cc_file_filter"))
+        if not files:
+            return
+        imported, messages, last = [], [], None
+        for name in files:
+            try:
+                last, klass, warnings = custom_class.import_file(Path(name), paths.classes_dir(), self.tables)
+            except CustomClassError as exc:
+                messages.append(f"✘ {Path(name).name}: {exc}")
+                continue
+            imported.append(klass.name)
+            messages += [f"⚠ {klass.name}: {w}" for w in warnings]
+        self._after_library_change(last)
+        if imported:
+            messages.insert(0, i18n.t("cc_imported", names=", ".join(imported)))
+        QMessageBox.information(self, i18n.t("cc_import_title"), "\n".join(messages))
+
+    def export_custom(self) -> None:
+        selected = self.selected_custom()
+        if selected is None:
+            QMessageBox.information(self, i18n.t("cc_export_title"), i18n.t("cc_pick_first"))
+            return
+        klass = selected[1]
+        suggested = str(Path.home() / f"{custom_class.slug(klass.name)}{custom_class.FILE_SUFFIX}")
+        target, _ = QFileDialog.getSaveFileName(self, i18n.t("cc_export_title"), suggested, i18n.t("cc_file_filter"))
+        if not target:
+            return
+        path = Path(target)
+        if not path.name.endswith(".json"):
+            path = path.with_name(path.name + custom_class.FILE_SUFFIX)
+        custom_class.save_file(klass, path)
+        self.log(i18n.t("cc_exported", path=path))
+        QMessageBox.information(self, i18n.t("cc_export_title"), i18n.t("cc_exported_body", path=path))
 
     # ----------------------------------------------------------- bag tab
 
@@ -755,35 +992,58 @@ class MainWindow(QMainWindow):
 
     def apply_mod(self) -> None:
         option = None
+        custom: Optional[CustomClass] = None
+        custom_path: Optional[Path] = None
         if self.chk_class.isChecked():
-            option = self.selected_option()
-            if option is None:
+            selected_custom = self.selected_custom()
+            if selected_custom is not None:
+                custom_path = selected_custom[0]
+                try:
+                    custom, warnings = custom_class.sanitize(self.tables, selected_custom[1])
+                except CustomClassError as exc:
+                    QMessageBox.warning(self, i18n.t("cc_invalid_title"), str(exc))
+                    return
+                if not custom.ability_ids:
+                    QMessageBox.warning(self, i18n.t("cc_invalid_title"), i18n.t("cc_need_skills"))
+                    return
+                for warning in warnings:
+                    self.log(f"⚠ {custom.name}: {warning}")
+            else:
+                option = self.selected_option()
+            if option is None and custom is None:
                 QMessageBox.information(self, i18n.t("pick_class_title"), i18n.t("pick_class_body"))
                 return
         bag = list(self.bag) if self.chk_bag.isChecked() else None
         if bag is not None and not bag:
             QMessageBox.information(self, i18n.t("empty_bag_title"), i18n.t("empty_bag_body"))
             return
-        if option is None and bag is None:
+        if option is None and custom is None and bag is None:
             QMessageBox.information(self, i18n.t("nothing_title"), i18n.t("nothing_body"))
             return
         rel = self._require_ready()
         if rel is None:
             return
-        if option and option.experimental:
+        experimental = option.experimental if option else (
+            custom is not None and class_catalog.category_for(custom.base_job) == class_catalog.CATEGORY_BOSS)
+        class_name = option.name if option else custom.name if custom else None
+        if experimental:
             answer = QMessageBox.question(
                 self, i18n.t("experimental_title"),
-                i18n.t("experimental_body", name=option.name))
+                i18n.t("experimental_body", name=class_name))
             if answer != QMessageBox.Yes:
                 return
 
         plan = mod_builder.plan_build(
-            self.tables, option.job_id if option else None, option.name if option else None, bag)
+            self.tables, option.job_id if option else None, class_name, bag, custom=custom)
         jp = self.jp_spin.value()
         db = paths.vanilla_sqlite()
         fallback_names = {i: self.item_name(i) for i in self.tables.items}
         if option:
             self.settings.class_job_id = option.job_id
+            self.settings.custom_class_file = ""
+            self.settings.save()
+        elif custom_path:
+            self.settings.custom_class_file = custom_path.name
             self.settings.save()
 
         def nxd_builder(p, work_dir):
@@ -791,6 +1051,9 @@ class MainWindow(QMainWindow):
             if p.source_job is not None:
                 class_edit = dict(ability_ids=p.ability_ids, jp_cost=jp, source_job_id=p.source_job.id,
                                   target_job_ids=class_catalog.RAMZA_JOB_IDS)
+                if p.custom is not None:
+                    class_edit.update(custom_name=p.custom.name, custom_description=p.custom.description,
+                                      skillset_name=p.custom.skillset, target_command_ids=p.ramza_command_ids)
             return nxd_db.build_nxd_files(db, paths.ff16tools_cli(), work_dir, class_edit, p.bag, fallback_names)
 
         def work(log):
@@ -803,8 +1066,8 @@ class MainWindow(QMainWindow):
         def done(enabled: bool) -> None:
             self.refresh_active()
             lines = []
-            if option:
-                lines.append(i18n.t("done_class", name=option.name))
+            if class_name:
+                lines.append(i18n.t("done_class", name=class_name))
             if plan.bag:
                 lines.append(i18n.t("done_bag", n=len(plan.bag)))
             msg = i18n.t("done_intro") + "\n\n" + "\n".join(lines) + "\n\n"

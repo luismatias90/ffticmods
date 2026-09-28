@@ -55,3 +55,10 @@ def vanilla_sqlite() -> Path:
 
 def settings_file() -> Path:
     return user_data_dir() / "settings.json"
+
+
+def classes_dir() -> Path:
+    """Biblioteca de classes customizadas (*.ramzaclass.json)."""
+    d = user_data_dir() / "classes"
+    d.mkdir(parents=True, exist_ok=True)
+    return d

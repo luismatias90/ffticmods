@@ -40,6 +40,27 @@ Na primeira abertura, um assistente pergunta se a interface fica em **português
 
 Para trocar de classe, é só escolher outra e aplicar de novo. **Restaurar jogo original** remove o mod.
 
+## Classes customizadas (skillset misto)
+
+Na sub-aba **✦ Minhas classes** você cria uma classe própria:
+
+1. **Nova classe...** abre o editor. Dê um nome à classe e ao skillset e escolha a **classe base**, que define atributos, equipamentos, Move/Jump, evasão e habilidades inatas.
+2. Monte o skillset com habilidades de **qualquer classe** do jogo: até **16 de ação** e **6 de reação/suporte/movimento**. A busca aceita nome, skillset ou tipo, e *Copiar skills da base* é um ponto de partida.
+3. Na aba **Atributos e equipamento** do editor, ajuste o que quiser em relação à classe base:
+   - **multiplicador** e **crescimento** de HP, MP, Speed, PA e MA;
+   - **Move**, **Jump** e **esquiva da classe (C-Ev)**;
+   - até 4 **habilidades inatas** (sempre ativas, fora dos slots);
+   - **equipamentos permitidos** (armas, escudo, cabeça, corpo, acessórios).
+
+   O que você não mexe continua igual ao da classe base, e segue a nova base se você trocar de base. Esquiva mágica não aparece porque no jogo ela não é da classe: vem de escudos, capas e acessórios.
+4. Selecione a classe na lista e clique em **Aplicar no jogo**, como com uma classe normal. O equipamento inicial do Ramza é trocado se a classe não puder usá-lo.
+
+O skillset misto vai nos skillsets próprios do Ramza (Mettle, ids 25–27), que só ele usa. Inimigos e outros personagens não mudam. O custo de JP escolhido vale para as habilidades do skillset, com o mesmo efeito colateral descrito acima.
+
+**Compartilhar:** **Exportar...** gera um arquivo `.ramzaclass.json` (poucos KB) para mandar no Discord, fórum etc. Quem recebe usa **Importar...**. O arquivo é conferido na importação: habilidades que não existem ou estão no slot errado saem com aviso, e uma classe base inválida é recusada. A biblioteca fica em `%LOCALAPPDATA%\SoloRamzaManager\classes`.
+
+> Habilidades de Item, Throw, Jump e Arithmeticks têm mecânica própria e podem se comportar diferente fora do skillset original. O editor avisa quando elas estão na lista. Teste antes da run.
+
 ## Itens iniciais (bolsa) — requer Deluxe Edition
 
 Na aba **Itens iniciais (bolsa)** você monta a lista de itens com que quer começar: busque qualquer item (armas, armaduras, acessórios, consumíveis), escolha a quantidade (1–99) e clique em **Adicionar →**. Marque **Trocar os itens do bônus da Deluxe Edition** e clique em **Aplicar no jogo**. A classe e a bolsa são independentes: dá para usar só uma delas, desmarcando a outra.
@@ -70,9 +91,11 @@ py -3.12 -m venv .venv
 ```
 
 Estrutura:
-- `ramza_manager/mod_builder.py`: calcula e gera o mod (JobData/AbilityData/SpawnData XML + ModConfig).
+- `ramza_manager/mod_builder.py`: calcula e gera o mod (JobData/JobCommandData/AbilityData/SpawnData XML + ModConfig).
 - `ramza_manager/nxd_db.py`: extrai as tabelas nex (`ability`, `job`, `jobcommand`) do jogo para SQLite e gera os `.nxd` editados (custo de JP e nome da classe).
 - `ramza_manager/class_catalog.py`: quais classes aparecem e em que aba.
+- `ramza_manager/custom_class.py`: formato `.ramzaclass.json`, validação e biblioteca de classes customizadas.
+- `ramza_manager/class_editor.py`: editor de classe customizada (PySide6).
 - `ramza_manager/app.py`: interface (PySide6).
 - `data/`: tabelas XML de referência do jogo original.
 - `tools/FF16Tools/`: FF16Tools.CLI (Nenkai, MIT).

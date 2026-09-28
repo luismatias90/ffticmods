@@ -265,6 +265,110 @@ STRINGS: dict[str, dict[str, str]] = {
             "<p>Para trocar o idioma depois, use o seletor <b>PT-BR / EN</b> no canto da janela, "
             "ou abra este assistente de novo pelo botão <b>Assistente</b>.</p>"
         ),
+        "cat_custom": "✦ Minhas classes",
+        "cc_btn_new": "Nova classe...",
+        "cc_btn_edit": "Editar...",
+        "cc_btn_dup": "Duplicar",
+        "cc_btn_delete": "Excluir",
+        "cc_btn_import": "Importar...",
+        "cc_btn_export": "Exportar...",
+        "cc_label": "{name} — {skillset} (base: {base}, {n} skills)",
+        "cc_preview_empty": (
+            "<h2>Minhas classes</h2>"
+            "<p>Crie uma classe com um <b>skillset misto</b>: escolha uma <b>classe base</b> "
+            "(que você pode ajustar: atributos, equipamentos, Move/Jump, esquiva e inatas) e monte o skillset com "
+            "habilidades de qualquer classe do jogo — até 16 de ação e 6 de reação/suporte/movimento.</p>"
+            "<p>Clique em <b>Nova classe...</b> para começar. Com <b>Exportar...</b> você gera um arquivo "
+            "<b>.ramzaclass.json</b> para mandar a outras pessoas; quem recebe usa <b>Importar...</b>.</p>"
+            "<p class='muted'>O skillset misto vai só nos skillsets próprios do Ramza, então inimigos e "
+            "outros personagens não mudam.</p>"
+        ),
+        "cc_preview_meta": "<p><b>Classe base:</b> {base} · <b>Autor:</b> {author}</p>",
+        "cc_no_author": "—",
+        "cc_special_warn": (
+            "<b>⚠ Atenção:</b> {names} têm mecânica própria (itens, arremesso, pulo ou Arithmeticks) "
+            "e podem se comportar diferente fora do skillset original. Teste antes da run."
+        ),
+        "cc_copy_name": "{name} (cópia)",
+        "cc_delete_title": "Excluir classe",
+        "cc_delete_body": "Excluir a classe \"{name}\" da biblioteca? O mod já aplicado não muda.",
+        "cc_import_title": "Importar classes",
+        "cc_export_title": "Exportar classe",
+        "cc_file_filter": "Classe do Solo Ramza (*.ramzaclass.json);;JSON (*.json)",
+        "cc_imported": "Importada(s): {names}",
+        "cc_pick_first": "Selecione uma classe em 'Minhas classes' primeiro.",
+        "cc_exported": "Classe exportada em {path}",
+        "cc_exported_body": "Arquivo salvo:\n{path}\n\nMande esse arquivo para quem quiser usar a classe.",
+        "cc_invalid_title": "Classe incompleta",
+        "cc_need_name": "Dê um nome para a classe.",
+        "cc_need_skills": "Adicione pelo menos uma habilidade ao skillset.",
+        "cc_err_format": "não é um arquivo de classe do Solo Ramza Manager.",
+        "cc_err_version": "feito numa versão mais nova do app (formato {version}). Atualize o Solo Ramza Manager.",
+        "cc_err_field": "campo '{field}' ausente ou inválido.",
+        "cc_err_read": "não consegui ler {name}: {error}",
+        "cc_err_base": "Classe base inválida (Job {job}).",
+        "cc_warn_dropped": "habilidade {id} não existe como {slot} neste jogo e foi removida.",
+        "cc_warn_limit": "mais de {n} habilidades de {slot}; as excedentes foram removidas.",
+        "cc_slot_action": "ação",
+        "cc_slot_rsm": "reação/suporte/movimento",
+        "cc_new_title": "Nova classe",
+        "cc_edit_title": "Editar classe",
+        "cc_name": "Nome da classe:",
+        "cc_skillset": "Nome do skillset:",
+        "cc_skillset_ph": "(igual ao nome da classe)",
+        "cc_base": "Classe base:",
+        "cc_copy_base": "Copiar skills da base",
+        "cc_copy_base_tip": "Adiciona às listas as habilidades do skillset original da classe base.",
+        "cc_author": "Autor:",
+        "cc_desc": "Descrição:",
+        "cc_desc_ph": "Opcional. Aparece no jogo no lugar da descrição da classe.",
+        "cc_base_hint": (
+            "A classe base dá o ponto de partida de atributos, equipamentos, Move/Jump, esquiva e inatas "
+            "(ajuste na aba 'Atributos e equipamento'). O skillset abaixo substitui o dela. "
+            "Dê dois cliques numa habilidade para adicionar ou remover."
+        ),
+        "cc_search": "Buscar habilidade, skillset ou tipo...",
+        "cc_filter_all": "Todas",
+        "cc_up": "↑",
+        "cc_down": "↓",
+        "cc_actions_count": "<b>Ação</b> ({n}/{max})",
+        "cc_rsm_count": "<b>Reação / Suporte / Movimento</b> ({n}/{max})",
+        "cc_full_title": "Skillset cheio",
+        "cc_full_body": (
+            "O skillset aceita até {a} habilidades de ação e {r} de reação/suporte/movimento. "
+            "Não couberam: {names}"
+        ),
+        "cc_page_skills": "Skillset",
+        "cc_page_job": "Atributos e equipamento",
+        "cc_save": "Salvar",
+        "cc_cancel": "Cancelar",
+        "cc_box_stats": "Atributos",
+        "cc_col_mult": "Multiplicador",
+        "cc_col_growth": "Crescimento",
+        "cc_stats_hint": (
+            "Multiplicador: % aplicado ao atributo (100 = normal, maior = mais forte). "
+            "Crescimento: quanto <b>menor</b>, mais o atributo sobe por nível."
+        ),
+        "cc_box_move": "Movimento e esquiva",
+        "cc_evasion": "Esquiva (C-Ev)",
+        "cc_no_mev": (
+            "Esquiva mágica não é da classe no jogo: vem de escudos, capas e acessórios."
+        ),
+        "cc_box_innate": "Habilidades inatas (sempre ativas, fora dos slots)",
+        "cc_box_equip": "Equipamentos permitidos",
+        "cc_equip_weapon": "Armas",
+        "cc_equip_shield": "Escudo",
+        "cc_equip_head": "Cabeça",
+        "cc_equip_body": "Corpo",
+        "cc_equip_accessory": "Acessórios",
+        "cc_reset_base": "Voltar tudo para a classe base",
+        "cc_base_value": "base: {value}",
+        "cc_slot_innate": "inata",
+        "cc_warn_equip": "tipo de equipamento desconhecido '{flag}' foi ignorado.",
+        "cc_warn_range": "{field} fora da faixa {low}–{high}; ajustado.",
+        "cc_changed": "<p><b>Alterado em relação à base:</b> {names}</p>",
+        "cc_field_innates": "inatas",
+        "cc_field_equip": "equipamentos",
         "wiz_checklist_title": "Situação agora",
     },
     LANG_EN: {
@@ -521,6 +625,110 @@ STRINGS: dict[str, dict[str, str]] = {
             "<p>To change the language later, use the <b>PT-BR / EN</b> selector in the corner of the window, "
             "or open this wizard again with the <b>Wizard</b> button.</p>"
         ),
+        "cat_custom": "✦ My classes",
+        "cc_btn_new": "New class...",
+        "cc_btn_edit": "Edit...",
+        "cc_btn_dup": "Duplicate",
+        "cc_btn_delete": "Delete",
+        "cc_btn_import": "Import...",
+        "cc_btn_export": "Export...",
+        "cc_label": "{name} — {skillset} (base: {base}, {n} skills)",
+        "cc_preview_empty": (
+            "<h2>My classes</h2>"
+            "<p>Create a class with a <b>mixed skillset</b>: pick a <b>base class</b> "
+            "(which you can tweak: stats, equipment, Move/Jump, evasion and innates) and build the skillset from "
+            "abilities of any class in the game — up to 16 action and 6 reaction/support/movement.</p>"
+            "<p>Click <b>New class...</b> to start. <b>Export...</b> creates a <b>.ramzaclass.json</b> "
+            "file you can send to other people; they load it with <b>Import...</b>.</p>"
+            "<p class='muted'>The mixed skillset only goes into Ramza's own skillsets, so enemies and "
+            "other characters are not affected.</p>"
+        ),
+        "cc_preview_meta": "<p><b>Base class:</b> {base} · <b>Author:</b> {author}</p>",
+        "cc_no_author": "—",
+        "cc_special_warn": (
+            "<b>⚠ Heads up:</b> {names} have their own mechanics (items, throwing, jumping or Arithmeticks) "
+            "and may behave differently outside their original skillset. Test before your run."
+        ),
+        "cc_copy_name": "{name} (copy)",
+        "cc_delete_title": "Delete class",
+        "cc_delete_body": "Delete the class \"{name}\" from the library? The mod already applied won't change.",
+        "cc_import_title": "Import classes",
+        "cc_export_title": "Export class",
+        "cc_file_filter": "Solo Ramza class (*.ramzaclass.json);;JSON (*.json)",
+        "cc_imported": "Imported: {names}",
+        "cc_pick_first": "Select a class in 'My classes' first.",
+        "cc_exported": "Class exported to {path}",
+        "cc_exported_body": "File saved:\n{path}\n\nSend this file to anyone who wants to use the class.",
+        "cc_invalid_title": "Incomplete class",
+        "cc_need_name": "Give the class a name.",
+        "cc_need_skills": "Add at least one ability to the skillset.",
+        "cc_err_format": "this is not a Solo Ramza Manager class file.",
+        "cc_err_version": "made with a newer version of the app (format {version}). Update Solo Ramza Manager.",
+        "cc_err_field": "field '{field}' is missing or invalid.",
+        "cc_err_read": "could not read {name}: {error}",
+        "cc_err_base": "Invalid base class (Job {job}).",
+        "cc_warn_dropped": "ability {id} does not exist as {slot} in this game and was removed.",
+        "cc_warn_limit": "more than {n} {slot} abilities; the extra ones were removed.",
+        "cc_slot_action": "action",
+        "cc_slot_rsm": "reaction/support/movement",
+        "cc_new_title": "New class",
+        "cc_edit_title": "Edit class",
+        "cc_name": "Class name:",
+        "cc_skillset": "Skillset name:",
+        "cc_skillset_ph": "(same as the class name)",
+        "cc_base": "Base class:",
+        "cc_copy_base": "Copy base skills",
+        "cc_copy_base_tip": "Adds the abilities of the base class's original skillset to the lists.",
+        "cc_author": "Author:",
+        "cc_desc": "Description:",
+        "cc_desc_ph": "Optional. Shown in game instead of the class description.",
+        "cc_base_hint": (
+            "The base class is the starting point for stats, equipment, Move/Jump, evasion and innates "
+            "(tweak them in the 'Stats and equipment' tab). The skillset below replaces its own. "
+            "Double-click an ability to add or remove it."
+        ),
+        "cc_search": "Search ability, skillset or type...",
+        "cc_filter_all": "All",
+        "cc_up": "↑",
+        "cc_down": "↓",
+        "cc_actions_count": "<b>Action</b> ({n}/{max})",
+        "cc_rsm_count": "<b>Reaction / Support / Movement</b> ({n}/{max})",
+        "cc_full_title": "Skillset full",
+        "cc_full_body": (
+            "The skillset holds up to {a} action and {r} reaction/support/movement abilities. "
+            "Didn't fit: {names}"
+        ),
+        "cc_page_skills": "Skillset",
+        "cc_page_job": "Stats and equipment",
+        "cc_save": "Save",
+        "cc_cancel": "Cancel",
+        "cc_box_stats": "Stats",
+        "cc_col_mult": "Multiplier",
+        "cc_col_growth": "Growth",
+        "cc_stats_hint": (
+            "Multiplier: % applied to the stat (100 = normal, higher = stronger). "
+            "Growth: the <b>lower</b> it is, the more the stat rises per level."
+        ),
+        "cc_box_move": "Movement and evasion",
+        "cc_evasion": "Evasion (C-Ev)",
+        "cc_no_mev": (
+            "Magic evasion is not a class stat in the game: it comes from shields, cloaks and accessories."
+        ),
+        "cc_box_innate": "Innate abilities (always on, outside the slots)",
+        "cc_box_equip": "Allowed equipment",
+        "cc_equip_weapon": "Weapons",
+        "cc_equip_shield": "Shield",
+        "cc_equip_head": "Head",
+        "cc_equip_body": "Body",
+        "cc_equip_accessory": "Accessories",
+        "cc_reset_base": "Reset everything to the base class",
+        "cc_base_value": "base: {value}",
+        "cc_slot_innate": "innate",
+        "cc_warn_equip": "unknown equipment type '{flag}' was ignored.",
+        "cc_warn_range": "{field} outside {low}–{high}; adjusted.",
+        "cc_changed": "<p><b>Changed from the base:</b> {names}</p>",
+        "cc_field_innates": "innates",
+        "cc_field_equip": "equipment",
         "wiz_checklist_title": "Status right now",
     },
 }

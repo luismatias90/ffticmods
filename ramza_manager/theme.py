@@ -57,6 +57,7 @@ QToolTip {{
     color: {GOLD_LIGHT}; font-size: 22pt; font-weight: bold; letter-spacing: 3px;
 }}
 #BannerSubtitle {{ color: {PARCHMENT}; font-size: 10pt; font-style: italic; }}
+QLabel#Muted {{ color: {PARCHMENT_DARK}; font-style: italic; }}
 
 /* ---- Grupos (painéis de pergaminho) ---- */
 QGroupBox {{
