@@ -1,0 +1,41 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "Mystic Knight",
+  "skillset": "Spellblade",
+  "author": "Solo Ramza Manager",
+  "description": "A knight who channels magick through the blade, afflicting foes with every strike.",
+  "base_job": 76,
+  "actions": [
+    234,
+    235,
+    236,
+    237,
+    240,
+    241,
+    243,
+    244,
+    245,
+    246,
+    247,
+    16,
+    20,
+    24,
+    142,
+    145
+  ],
+  "rsm": [
+    447,
+    435,
+    467,
+    482,
+    486
+  ],
+  "job": {
+    "multipliers": {
+      "MP": 100,
+      "MA": 105
+    }
+  }
+}

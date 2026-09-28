@@ -579,19 +579,32 @@ class MainWindow(QMainWindow):
         current = select or self._selected_custom_path()
         self.custom_list.blockSignals(True)
         self.custom_list.clear()
-        for path, klass in custom_class.list_library(paths.classes_dir()):
+        entries = [(p, k, True) for p, k in custom_class.list_library(paths.presets_dir())]
+        entries += [(p, k, False) for p, k in custom_class.list_library(paths.classes_dir())]
+        for path, klass, builtin in entries:
             label = i18n.t("cc_label", name=klass.name, skillset=klass.skillset,
                            base=self.job_display_name(klass.base_job), n=len(klass.ability_ids))
+            if builtin:
+                label = f"★ {label}"
             if needle and needle not in label.lower():
                 continue
             item = QListWidgetItem(label)
             item.setData(Qt.UserRole, (path, klass))
-            item.setToolTip(str(path))
+            item.setToolTip(i18n.t("cc_builtin_tip") if builtin else str(path))
             self.custom_list.addItem(item)
             if current and path == current:
                 self.custom_list.setCurrentItem(item)
         self.custom_list.blockSignals(False)
         self.show_preview()
+
+    @staticmethod
+    def is_builtin(path: Path) -> bool:
+        return path.parent == paths.presets_dir()
+
+    def _saved_custom_path(self) -> Path:
+        """Caminho salvo em settings (antigo: só o nome de um arquivo da biblioteca)."""
+        saved = Path(self.settings.custom_class_file)
+        return saved if saved.is_absolute() else paths.classes_dir() / saved
 
     def _custom_tab_index(self) -> int:
         return len(self.lists)
@@ -622,7 +635,7 @@ class MainWindow(QMainWindow):
 
     def _select_saved_class(self) -> None:
         if self.settings.custom_class_file:
-            target = paths.classes_dir() / self.settings.custom_class_file
+            target = self._saved_custom_path()
             for row in range(self.custom_list.count()):
                 if self.custom_list.item(row).data(Qt.UserRole)[0] == target:
                     self.tabs.setCurrentIndex(self._custom_tab_index())
@@ -773,6 +786,9 @@ class MainWindow(QMainWindow):
         path, klass = selected
         edited = self._editor(klass)
         if edited:
+            if self.is_builtin(path):
+                path = custom_class.free_path(paths.classes_dir(), edited.name)
+                self.log(i18n.t("cc_builtin_copied", name=edited.name))
             custom_class.save_file(edited, path)
             self._after_library_change(path)
 
@@ -791,11 +807,14 @@ class MainWindow(QMainWindow):
         if selected is None:
             return
         path, klass = selected
+        if self.is_builtin(path):
+            QMessageBox.information(self, i18n.t("cc_delete_title"), i18n.t("cc_builtin_no_delete"))
+            return
         answer = QMessageBox.question(self, i18n.t("cc_delete_title"), i18n.t("cc_delete_body", name=klass.name))
         if answer != QMessageBox.Yes:
             return
         path.unlink(missing_ok=True)
-        if self.settings.custom_class_file == path.name:
+        if self._saved_custom_path() == path:
             self.settings.custom_class_file = ""
             self.settings.save()
         self._after_library_change(None)
@@ -1043,7 +1062,7 @@ class MainWindow(QMainWindow):
             self.settings.custom_class_file = ""
             self.settings.save()
         elif custom_path:
-            self.settings.custom_class_file = custom_path.name
+            self.settings.custom_class_file = str(custom_path)
             self.settings.save()
 
         def nxd_builder(p, work_dir):

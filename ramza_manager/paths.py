@@ -30,6 +30,11 @@ def data_dir() -> Path:
     return bundled_root() / "data"
 
 
+def presets_dir() -> Path:
+    """Classes customizadas de fábrica, que vêm com o app (só leitura)."""
+    return data_dir() / "classes"
+
+
 def ff16tools_cli() -> Path:
     return bundled_root() / "tools" / "FF16Tools" / "win-x64" / "FF16Tools.CLI.exe"
 

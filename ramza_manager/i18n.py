@@ -278,7 +278,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "<p>Crie uma classe com um <b>skillset misto</b>: escolha uma <b>classe base</b> "
             "(que você pode ajustar: atributos, equipamentos, Move/Jump, esquiva e inatas) e monte o skillset com "
             "habilidades de qualquer classe do jogo — até 16 de ação e 6 de reação/suporte/movimento.</p>"
-            "<p>Clique em <b>Nova classe...</b> para começar. Com <b>Exportar...</b> você gera um arquivo "
+            "<p>As classes com <b>★</b> vêm prontas (Red Mage, Paladin, Sage...). Clique em <b>Nova classe...</b> para criar a sua. Com <b>Exportar...</b> você gera um arquivo "
             "<b>.ramzaclass.json</b> para mandar a outras pessoas; quem recebe usa <b>Importar...</b>.</p>"
             "<p class='muted'>O skillset misto vai só nos skillsets próprios do Ramza, então inimigos e "
             "outros personagens não mudam.</p>"
@@ -340,6 +340,9 @@ STRINGS: dict[str, dict[str, str]] = {
         ),
         "cc_page_skills": "Skillset",
         "cc_page_job": "Atributos e equipamento",
+        "cc_builtin_tip": "Classe de fábrica. Editar cria uma cópia sua em 'Minhas classes'.",
+        "cc_builtin_copied": "Classe de fábrica editada: a versão alterada foi salva como '{name}'.",
+        "cc_builtin_no_delete": "As classes de fábrica (★) vêm com o app e não podem ser excluídas.",
         "cc_save": "Salvar",
         "cc_cancel": "Cancelar",
         "cc_box_stats": "Atributos",
@@ -638,7 +641,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "<p>Create a class with a <b>mixed skillset</b>: pick a <b>base class</b> "
             "(which you can tweak: stats, equipment, Move/Jump, evasion and innates) and build the skillset from "
             "abilities of any class in the game — up to 16 action and 6 reaction/support/movement.</p>"
-            "<p>Click <b>New class...</b> to start. <b>Export...</b> creates a <b>.ramzaclass.json</b> "
+            "<p>Classes marked <b>★</b> come ready-made (Red Mage, Paladin, Sage...). Click <b>New class...</b> to make your own. <b>Export...</b> creates a <b>.ramzaclass.json</b> "
             "file you can send to other people; they load it with <b>Import...</b>.</p>"
             "<p class='muted'>The mixed skillset only goes into Ramza's own skillsets, so enemies and "
             "other characters are not affected.</p>"
@@ -700,6 +703,9 @@ STRINGS: dict[str, dict[str, str]] = {
         ),
         "cc_page_skills": "Skillset",
         "cc_page_job": "Stats and equipment",
+        "cc_builtin_tip": "Built-in class. Editing it creates your own copy in 'My classes'.",
+        "cc_builtin_copied": "Built-in class edited: your version was saved as '{name}'.",
+        "cc_builtin_no_delete": "Built-in classes (★) ship with the app and cannot be deleted.",
         "cc_save": "Save",
         "cc_cancel": "Cancel",
         "cc_box_stats": "Stats",

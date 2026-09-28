@@ -219,3 +219,17 @@ def test_innate_pool_has_existing_innates(tables):
     pool = set(custom_class.innate_pool(tables))
     for job in tables.jobs.values():
         assert set(job.innate_ability_ids) <= pool | {i for i in job.innate_ability_ids if i not in tables.abilities}
+
+
+def test_builtin_presets_are_valid(tables):
+    presets = custom_class.list_library(paths.presets_dir())
+    assert len(presets) >= 5
+    names = set()
+    for path, klass in presets:
+        clean, warnings = custom_class.sanitize(tables, klass)
+        assert not warnings, (path.name, warnings)
+        assert klass.name not in names
+        names.add(klass.name)
+        plan = mod_builder.plan_build(tables, None, None, custom=clean)
+        assert plan.command_xml and plan.ability_ids
+    assert "Red Mage" in names

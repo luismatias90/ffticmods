@@ -1,0 +1,59 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "Red Mage",
+  "skillset": "Red Magicks",
+  "author": "Solo Ramza Manager",
+  "description": "A swordsman who dabbles in both white and black magicks. Jack of all trades, master of none.",
+  "base_job": 80,
+  "actions": [
+    1,
+    2,
+    5,
+    8,
+    9,
+    11,
+    14,
+    16,
+    17,
+    20,
+    21,
+    24,
+    25,
+    32,
+    34,
+    39
+  ],
+  "rsm": [
+    435,
+    467,
+    482,
+    468,
+    486
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "Sword",
+      "Rod",
+      "Shield",
+      "Hat",
+      "Clothing",
+      "Robe",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "multipliers": {
+      "HP": 100,
+      "MP": 110,
+      "PA": 100,
+      "MA": 115
+    }
+  }
+}

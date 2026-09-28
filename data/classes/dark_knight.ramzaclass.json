@@ -1,0 +1,55 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "Dark Knight",
+  "skillset": "Darkness",
+  "author": "Solo Ramza Manager",
+  "description": "A knight who trades light for power, sapping the strength and life of all who oppose him.",
+  "base_job": 76,
+  "actions": [
+    164,
+    165,
+    196,
+    197,
+    198,
+    199,
+    235,
+    236,
+    241,
+    28,
+    30
+  ],
+  "rsm": [
+    442,
+    438,
+    465,
+    476,
+    486
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Sword",
+      "KnightSword",
+      "Katana",
+      "Axe",
+      "FellSword",
+      "Helmet",
+      "Armor",
+      "Robe",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "multipliers": {
+      "HP": 130,
+      "PA": 130,
+      "MA": 90
+    },
+    "evasion": 5
+  }
+}

@@ -42,7 +42,21 @@ Para trocar de classe, é só escolher outra e aplicar de novo. **Restaurar jogo
 
 ## Classes customizadas (skillset misto)
 
-Na sub-aba **✦ Minhas classes** você cria uma classe própria:
+Na sub-aba **✦ Minhas classes** já vêm 7 classes prontas, marcadas com ★:
+
+| Classe | Base | Ideia |
+|---|---|---|
+| Red Mage | Black Mage | Magia branca e negra básicas, com espada e escudo leve |
+| Mystic Knight | Knight | Spellblade (lâmina com status) e magias elementais |
+| Paladin | Knight | Holy Sword e curas |
+| Dark Knight | Knight | Fell Sword, drenos e *sap*; mais HP/PA e menos esquiva |
+| Sage | White Mage | Branca e negra avançadas, MA alto e corpo frágil |
+| Ranger | Archer | Aim e Aimed Shot, com arco, besta e arma de fogo, Move 4 |
+| Battle Monk | Monk | Artes marciais e os gritos de guerra do Ramza |
+
+As classes de fábrica não podem ser apagadas. Editar uma delas salva uma cópia sua. Elas ficam em `data/classes/` e são geradas por `packaging/make_presets.py`.
+
+Você também pode criar uma classe própria:
 
 1. **Nova classe...** abre o editor. Dê um nome à classe e ao skillset e escolha a **classe base**, que define atributos, equipamentos, Move/Jump, evasão e habilidades inatas.
 2. Monte o skillset com habilidades de **qualquer classe** do jogo: até **16 de ação** e **6 de reação/suporte/movimento**. A busca aceita nome, skillset ou tipo, e *Copiar skills da base* é um ponto de partida.

@@ -1,0 +1,49 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "Ranger",
+  "skillset": "Marksmanship",
+  "author": "Solo Ramza Manager",
+  "description": "A hunter who picks targets apart from afar with bow, crossbow and gun.",
+  "base_job": 77,
+  "actions": [
+    406,
+    407,
+    408,
+    410,
+    412,
+    213,
+    214,
+    215
+  ],
+  "rsm": [
+    424,
+    452,
+    469,
+    471,
+    487
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "Gun",
+      "Crossbow",
+      "Bow",
+      "Hat",
+      "HairAdornment",
+      "Clothing",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "multipliers": {
+      "Speed": 105
+    },
+    "move": 4
+  }
+}
