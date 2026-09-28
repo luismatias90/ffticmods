@@ -1,0 +1,39 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "White Monk",
+  "skillset": "Pilgrim Arts",
+  "author": "Solo Ramza Manager",
+  "description": "A pilgrim who pairs a disciplined fist with healing prayers.",
+  "base_job": 78,
+  "actions": [
+    100,
+    102,
+    103,
+    105,
+    106,
+    107,
+    1,
+    2,
+    3,
+    5,
+    9,
+    11,
+    14,
+    15
+  ],
+  "rsm": [
+    442,
+    428,
+    468,
+    493,
+    486
+  ],
+  "job": {
+    "multipliers": {
+      "MP": 100,
+      "MA": 100
+    }
+  }
+}

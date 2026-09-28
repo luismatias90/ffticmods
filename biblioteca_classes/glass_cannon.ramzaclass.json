@@ -1,0 +1,39 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Glass Cannon",
+  "skillset": "Cataclysm",
+  "author": "Solo Ramza Manager",
+  "description": "Immense magickal power in a body that shatters at a touch. Not for the faint of heart.",
+  "base_job": 80,
+  "actions": [
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25,
+    26,
+    27,
+    31,
+    44
+  ],
+  "rsm": [
+    435,
+    467,
+    482,
+    494
+  ],
+  "job": {
+    "multipliers": {
+      "HP": 45,
+      "MA": 170
+    },
+    "evasion": 0
+  }
+}

@@ -1,0 +1,40 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Druid",
+  "skillset": "Wild Magicks",
+  "author": "Solo Ramza Manager",
+  "description": "A guardian of the wilds who calls on the land itself and mends wounds with nature's grace.",
+  "base_job": 86,
+  "actions": [
+    126,
+    127,
+    128,
+    129,
+    130,
+    131,
+    132,
+    133,
+    134,
+    135,
+    136,
+    137,
+    1,
+    2,
+    8,
+    14
+  ],
+  "rsm": [
+    437,
+    428,
+    465,
+    468,
+    501
+  ],
+  "job": {
+    "multipliers": {
+      "MA": 110
+    }
+  }
+}

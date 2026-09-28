@@ -1,0 +1,37 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Time Knight",
+  "skillset": "Chronoblade",
+  "author": "Solo Ramza Manager",
+  "description": "A knight who bends time on the battlefield, hastening allies and freezing foes in place.",
+  "base_job": 76,
+  "actions": [
+    32,
+    34,
+    36,
+    37,
+    38,
+    39,
+    41,
+    42,
+    143,
+    138,
+    139,
+    141
+  ],
+  "rsm": [
+    447,
+    433,
+    445,
+    482,
+    498
+  ],
+  "job": {
+    "multipliers": {
+      "MP": 100,
+      "MA": 100
+    }
+  }
+}

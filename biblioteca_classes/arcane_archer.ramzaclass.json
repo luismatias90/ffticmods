@@ -1,0 +1,38 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Arcane Archer",
+  "skillset": "Arcane Shot",
+  "author": "Solo Ramza Manager",
+  "description": "An archer who enchants each arrow with elemental magick.",
+  "base_job": 77,
+  "actions": [
+    406,
+    407,
+    408,
+    409,
+    410,
+    16,
+    17,
+    20,
+    21,
+    24,
+    25,
+    28,
+    34
+  ],
+  "rsm": [
+    452,
+    469,
+    435,
+    467,
+    489
+  ],
+  "job": {
+    "multipliers": {
+      "MP": 100,
+      "MA": 100
+    }
+  }
+}

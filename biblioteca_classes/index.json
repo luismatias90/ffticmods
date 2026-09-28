@@ -1,0 +1,209 @@
+[
+  {
+    "file": "time_knight.ramzaclass.json",
+    "name": "Time Knight",
+    "skillset": "Chronoblade",
+    "base_class": "Knight",
+    "base_job": 76,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "híbrido",
+      "suporte"
+    ],
+    "summary_pt": "Knight com Time Magicks (Haste, Stop, Quick, Gravity) e Rend.",
+    "description": "A knight who bends time on the battlefield, hastening allies and freezing foes in place.",
+    "actions": 12,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "druid.ramzaclass.json",
+    "name": "Druid",
+    "skillset": "Wild Magicks",
+    "base_class": "Geomancer",
+    "base_job": 86,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "mago",
+      "cura"
+    ],
+    "summary_pt": "Geomancer com Geomancy completa e curas brancas básicas.",
+    "description": "A guardian of the wilds who calls on the land itself and mends wounds with nature's grace.",
+    "actions": 16,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "shogun.ramzaclass.json",
+    "name": "Shogun",
+    "skillset": "Bushido",
+    "base_class": "Samurai",
+    "base_job": 88,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "físico"
+    ],
+    "summary_pt": "Samurai com Iaido completo, Focus, Shout e Rend Power/Speed.",
+    "description": "A warlord of the blade who commands every katana technique and a warrior's resolve.",
+    "actions": 14,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "white_monk.ramzaclass.json",
+    "name": "White Monk",
+    "skillset": "Pilgrim Arts",
+    "base_class": "Monk",
+    "base_job": 78,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "físico",
+      "cura"
+    ],
+    "summary_pt": "Monk com Martial Arts e White Magicks até Curaga e Holy.",
+    "description": "A pilgrim who pairs a disciplined fist with healing prayers.",
+    "actions": 14,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "arcane_archer.ramzaclass.json",
+    "name": "Arcane Archer",
+    "skillset": "Arcane Shot",
+    "base_class": "Archer",
+    "base_job": 77,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "híbrido",
+      "distância"
+    ],
+    "summary_pt": "Archer com Aim e Black Magicks de nível 1 e 2.",
+    "description": "An archer who enchants each arrow with elemental magick.",
+    "actions": 13,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "warlock.ramzaclass.json",
+    "name": "Warlock",
+    "skillset": "Forbidden Arts",
+    "base_class": "Black Mage",
+    "base_job": 80,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "mago",
+      "status"
+    ],
+    "summary_pt": "Black Mage com magias -ja, Flare, debuffs de Mystic e Lich/Zodiark.",
+    "description": "A seeker of forbidden knowledge who curses, confounds and slays with the darkest magicks.",
+    "actions": 15,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "rogue.ramzaclass.json",
+    "name": "Rogue",
+    "skillset": "Larceny",
+    "base_class": "Thief",
+    "base_job": 83,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "físico",
+      "utilidade"
+    ],
+    "summary_pt": "Thief com Dual Wield inato, Steal completo e golpes do Squire/Monk.",
+    "description": "A nimble thief who wields a blade in each hand and takes whatever isn't nailed down.",
+    "actions": 10,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "troubadour.ramzaclass.json",
+    "name": "Troubadour",
+    "skillset": "Performance",
+    "base_class": "Bard",
+    "base_job": 91,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "suporte"
+    ],
+    "summary_pt": "Bard com todos os Bardsongs e todas as Dances.",
+    "description": "A wandering performer who knows every song and every dance.",
+    "actions": 14,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "alchemist.ramzaclass.json",
+    "name": "Alchemist",
+    "skillset": "Alchemy",
+    "base_class": "Chemist",
+    "base_job": 75,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "cura",
+      "itens"
+    ],
+    "summary_pt": "Chemist com Items completo, Regen e Esuna, pode usar espada.",
+    "description": "A field medic who never runs out of remedies, and can hold the line with a sword.",
+    "actions": 16,
+    "rsm": 5,
+    "special_mechanics": true,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "freelancer.ramzaclass.json",
+    "name": "Freelancer",
+    "skillset": "Odd Jobs",
+    "base_class": "Squire",
+    "base_job": 74,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "iniciante",
+      "híbrido"
+    ],
+    "summary_pt": "Squire com um pouco de tudo: cura, magia, Haste, Steal e Rend.",
+    "description": "A wanderer who picked up a little of everything along the way.",
+    "actions": 12,
+    "rsm": 5,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  },
+  {
+    "file": "glass_cannon.ramzaclass.json",
+    "name": "Glass Cannon",
+    "skillset": "Cataclysm",
+    "base_class": "Black Mage",
+    "base_job": 80,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "desafio",
+      "mago"
+    ],
+    "summary_pt": "DESAFIO: MA altíssimo e metade do HP. Todo o elemental, Flare e Meteor.",
+    "description": "Immense magickal power in a body that shatters at a touch. Not for the faint of heart.",
+    "actions": 14,
+    "rsm": 4,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
+  }
+]

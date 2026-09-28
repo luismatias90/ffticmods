@@ -1,0 +1,49 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Freelancer",
+  "skillset": "Odd Jobs",
+  "author": "Solo Ramza Manager",
+  "description": "A wanderer who picked up a little of everything along the way.",
+  "base_job": 74,
+  "actions": [
+    146,
+    147,
+    148,
+    149,
+    1,
+    16,
+    20,
+    24,
+    32,
+    108,
+    138,
+    102
+  ],
+  "rsm": [
+    436,
+    441,
+    479,
+    463,
+    486
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "Sword",
+      "Axe",
+      "Rod",
+      "Hat",
+      "Clothing",
+      "Robe",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Shogun",
+  "skillset": "Bushido",
+  "author": "Solo Ramza Manager",
+  "description": "A warlord of the blade who commands every katana technique and a warrior's resolve.",
+  "base_job": 88,
+  "actions": [
+    76,
+    77,
+    78,
+    79,
+    80,
+    81,
+    82,
+    83,
+    84,
+    85,
+    146,
+    153,
+    144,
+    143
+  ],
+  "rsm": [
+    451,
+    434,
+    476,
+    465,
+    486
+  ],
+  "job": {
+    "multipliers": {
+      "HP": 120
+    }
+  }
+}

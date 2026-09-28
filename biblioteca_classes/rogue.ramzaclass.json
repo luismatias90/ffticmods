@@ -1,0 +1,49 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Rogue",
+  "skillset": "Larceny",
+  "author": "Solo Ramza Manager",
+  "description": "A nimble thief who wields a blade in each hand and takes whatever isn't nailed down.",
+  "base_job": 83,
+  "actions": [
+    108,
+    109,
+    110,
+    111,
+    113,
+    114,
+    115,
+    147,
+    148,
+    101
+  ],
+  "rsm": [
+    426,
+    450,
+    453,
+    471,
+    487
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "NinjaBlade",
+      "Sword",
+      "Hat",
+      "HairAdornment",
+      "Clothing",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "innates": [
+      477
+    ]
+  }
+}

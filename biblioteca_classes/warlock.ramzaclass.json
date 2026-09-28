@@ -1,0 +1,35 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Warlock",
+  "skillset": "Forbidden Arts",
+  "author": "Solo Ramza Manager",
+  "description": "A seeker of forbidden knowledge who curses, confounds and slays with the darkest magicks.",
+  "base_job": 80,
+  "actions": [
+    28,
+    29,
+    30,
+    31,
+    19,
+    23,
+    27,
+    46,
+    51,
+    52,
+    55,
+    57,
+    59,
+    73,
+    75
+  ],
+  "rsm": [
+    435,
+    438,
+    467,
+    494,
+    482
+  ],
+  "job": {}
+}

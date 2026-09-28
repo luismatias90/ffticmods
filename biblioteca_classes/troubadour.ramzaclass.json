@@ -1,0 +1,50 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Troubadour",
+  "skillset": "Performance",
+  "author": "Solo Ramza Manager",
+  "description": "A wandering performer who knows every song and every dance.",
+  "base_job": 91,
+  "actions": [
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    92,
+    93,
+    94,
+    95,
+    96,
+    97,
+    98,
+    99
+  ],
+  "rsm": [
+    423,
+    430,
+    422,
+    429,
+    488
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "Instrument",
+      "Cloth",
+      "Hat",
+      "HairAdornment",
+      "Clothing",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ]
+  }
+}

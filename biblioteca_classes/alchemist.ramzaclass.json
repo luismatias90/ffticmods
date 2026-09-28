@@ -1,0 +1,56 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.4.0",
+  "name": "Alchemist",
+  "skillset": "Alchemy",
+  "author": "Solo Ramza Manager",
+  "description": "A field medic who never runs out of remedies, and can hold the line with a sword.",
+  "base_job": 75,
+  "actions": [
+    368,
+    369,
+    370,
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377,
+    378,
+    379,
+    380,
+    381,
+    8,
+    14
+  ],
+  "rsm": [
+    441,
+    475,
+    480,
+    509,
+    486
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "Sword",
+      "Gun",
+      "Hat",
+      "HairAdornment",
+      "Clothing",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "multipliers": {
+      "HP": 100,
+      "PA": 90
+    }
+  }
+}
