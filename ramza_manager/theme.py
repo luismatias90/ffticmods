@@ -177,6 +177,44 @@ QScrollBar::add-line, QScrollBar::sub-line {{ width: 0; height: 0; }}
 QScrollBar::add-page, QScrollBar::sub-page {{ background: none; }}
 QSplitter::handle {{ background: transparent; width: 8px; }}
 
+QComboBox {{
+    color: {INK}; background: #fbf5e4;
+    border: 1px solid {GOLD_DARK}; border-radius: 4px; padding: 3px 8px;
+}}
+QComboBox:hover {{ border: 1px solid {GOLD}; }}
+QComboBox QAbstractItemView {{
+    color: {INK}; background: {PARCHMENT};
+    selection-background-color: {CRIMSON}; selection-color: {PARCHMENT};
+}}
+
+QFrame#WizardBody {{
+    background: {PARCHMENT};
+    border: 2px solid {GOLD_DARK};
+    border-radius: 6px;
+}}
+QFrame#WizardBody QLabel {{ color: {INK}; }}
+QScrollArea {{ background: transparent; border: none; }}
+
+QPushButton#Step {{
+    text-align: left; color: {PARCHMENT}; background: transparent;
+    border: none; border-left: 3px solid transparent;
+    padding: 7px 8px; font-weight: normal;
+}}
+QPushButton#Step:checked {{
+    color: {GOLD_LIGHT}; background: {WOOD_LIGHT};
+    border-left: 3px solid {GOLD}; font-weight: bold;
+}}
+QPushButton#Step:hover:!checked {{ color: {GOLD_LIGHT}; }}
+QPushButton#Step:disabled {{ color: #6d5a40; }}
+QPushButton#LangChoice {{
+    font-size: 13pt; padding: 14px 18px; text-align: left;
+}}
+QPushButton#LangChoice:checked {{
+    color: {GOLD_LIGHT}; font-weight: bold;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 {CRIMSON_LIGHT}, stop:1 #5e1616);
+    border: 2px solid {GOLD};
+}}
+
 QMessageBox QLabel {{ color: {TEXT_ON_WOOD}; font-size: 11pt; }}
 QMessageBox QPushButton {{ min-width: 80px; }}
 """

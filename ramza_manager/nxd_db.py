@@ -24,7 +24,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Iterable, Optional
 
-from . import ff16tools, game_install
+from . import ff16tools, game_install, i18n
 
 LineCb = Optional[Callable[[str], None]]
 
@@ -94,41 +94,38 @@ def extract_vanilla_db(game_root: Path, cli: Path, cache: Path, db_path: Path, l
     needed = needed_filenames()
     packs = game_install.vanilla_pack_files(game_install.enhanced_pack_dir(game_root))
     if not packs:
-        raise RuntimeError("Nenhum .pac encontrado em data/enhanced. O jogo está instalado?")
+        raise RuntimeError(i18n.t("nxd_no_pac"))
 
     for pack in packs:
         if all((unpack_dir / "nxd" / name).exists() for name in needed):
             break
-        log(f"Procurando tabelas em {pack.name}...")
+        log(i18n.t("nxd_scanning", name=pack.name))
         code = ff16tools.unpack_pack(cli, pack, unpack_dir, "nxd/", None)
         if code != 0:
-            raise RuntimeError(
-                f"FF16Tools falhou ao ler {pack.name} (código {code}). "
-                "O .NET 9 Runtime está instalado?"
-            )
+            raise RuntimeError(i18n.t("nxd_ff16_fail", name=pack.name, code=code))
 
     missing = [n for n in needed if not (unpack_dir / "nxd" / n).exists()]
     required = {nxd_filename(t) for t in REQUIRED_TABLES}
     if required & set(missing):
-        raise RuntimeError(f"Não encontrei nos arquivos do jogo: {', '.join(sorted(required & set(missing)))}")
+        raise RuntimeError(i18n.t("nxd_missing", names=", ".join(sorted(required & set(missing)))))
     if missing:
-        log(f"Aviso: tabelas ausentes (ignoradas): {', '.join(missing)}")
+        log(i18n.t("nxd_warn", names=", ".join(missing)))
 
     for name in needed:
         src = unpack_dir / "nxd" / name
         if src.exists():
             shutil.copy(src, stage_dir / name)
 
-    log("Convertendo tabelas para SQLite...")
+    log(i18n.t("nxd_sqlite"))
     tmp_db = db_path.with_suffix(".tmp")
     tmp_db.unlink(missing_ok=True)
     code = ff16tools.nxd_to_sqlite(cli, stage_dir, tmp_db, None)
     if code != 0 or not tmp_db.exists():
-        raise RuntimeError(f"FF16Tools nxd-to-sqlite falhou (código {code}).")
+        raise RuntimeError(i18n.t("nxd_sqlite_fail", code=code))
     tmp_db.replace(db_path)
     shutil.rmtree(unpack_dir, ignore_errors=True)
     shutil.rmtree(stage_dir, ignore_errors=True)
-    log("Dados do jogo prontos.")
+    log(i18n.t("nxd_ready"))
     return db_path
 
 
@@ -391,15 +388,15 @@ def build_nxd_files(
         return []
 
     if line_cb:
-        line_cb(f"Gerando .nxd: {', '.join(tables)}")
+        line_cb(i18n.t("nxd_generating", tables=", ".join(tables)))
     code = ff16tools.sqlite_to_nxd(cli, staged, out_dir, tables, None)
     if code != 0:
-        raise RuntimeError(f"FF16Tools sqlite-to-nxd falhou (código {code}).")
+        raise RuntimeError(i18n.t("nxd_to_nxd_fail", code=code))
 
     produced = []
     for table in tables:
         path = out_dir / nxd_filename(table)
         if not path.exists():
-            raise RuntimeError(f"FF16Tools não gerou {path.name}.")
+            raise RuntimeError(i18n.t("nxd_not_generated", name=path.name))
         produced.append(path)
     return produced

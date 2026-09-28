@@ -3,58 +3,32 @@
 from __future__ import annotations
 
 import html
-import subprocess
 import sys
 import traceback
 from pathlib import Path
 from typing import Callable, Optional
 
-from PySide6.QtCore import QObject, Qt, QThread, QUrl, Signal
+from PySide6.QtCore import QObject, Qt, QThread, QTimer, QUrl, Signal
 from PySide6.QtGui import QDesktopServices
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QCheckBox, QFileDialog, QFrame, QGridLayout, QGroupBox, QHBoxLayout,
-    QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
+    QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout, QGroupBox,
+    QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
     QPlainTextEdit, QPushButton, QSpinBox, QSplitter, QTableWidget, QTableWidgetItem, QTabWidget,
     QTextBrowser, QVBoxLayout, QWidget,
 )
 
-from . import __version__, class_catalog, game_install, mod_builder, nxd_db, paths, reloaded, theme
+from . import __version__, class_catalog, game_install, i18n, mod_builder, nxd_db, paths, prereqs, reloaded, theme
 from .class_catalog import ClassOption
 from .nxd_db import MAX_QUANTITY, BagItem
 from .settings import Settings
 from .tables import ReferenceTables, load_reference_tables
+from .wizard import SetupWizard
 
 URL_RELOADED = "https://github.com/Reloaded-Project/Reloaded-II/releases/latest"
 URL_MODLOADER = "https://github.com/Nenkai/fftivc.utility.modloader/releases/latest"
 URL_DOTNET = "https://dotnet.microsoft.com/download/dotnet/9.0"
 
 STAT_ROWS = [("HP", "HP"), ("MP", "MP"), ("Speed", "Speed"), ("PA", "PA"), ("MA", "MA")]
-
-BAG_HELP = (
-    "<b>Como funciona:</b> o jogo entrega os itens do <b>bônus da Deluxe Edition</b> no inventário. "
-    "Este app troca o conteúdo desse bônus pela sua lista (as cores preta/vermelha do Ramza "
-    "continuam). Funciona só com a Deluxe e, em geral, vale para <b>jogo novo</b>: um save que já "
-    "recebeu o bônus não recebe de novo. <i>Experimental: teste primeiro com uma lista pequena.</i>"
-)
-
-
-def dotnet9_installed() -> bool:
-    for base in (Path(r"C:\Program Files\dotnet"), Path(r"C:\Program Files (x86)\dotnet")):
-        shared = base / "shared" / "Microsoft.NETCore.App"
-        if shared.is_dir() and any(p.name.startswith("9.") for p in shared.iterdir()):
-            return True
-    return False
-
-
-def reloaded_running() -> bool:
-    try:
-        out = subprocess.run(
-            ["tasklist", "/FI", "IMAGENAME eq Reloaded-II.exe", "/NH"],
-            capture_output=True, text=True, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        ).stdout
-    except OSError:
-        return False
-    return "reloaded-ii.exe" in out.lower()
 
 
 class Worker(QObject):
@@ -85,6 +59,8 @@ class MainWindow(QMainWindow):
         self.resize(1150, 800)
 
         self.settings = Settings.load()
+        if self.settings.language in i18n.LANGS:
+            i18n.set_language(self.settings.language)
         self.tables: ReferenceTables = load_reference_tables(paths.data_dir())
         self.catalog: list[ClassOption] = []
         self.ability_names: dict[int, str] = {}
@@ -109,19 +85,19 @@ class MainWindow(QMainWindow):
         root.addWidget(self._build_setup())
 
         self.main_tabs = QTabWidget()
-        self.main_tabs.addTab(self._build_class_tab(), "Classe do Ramza")
-        self.main_tabs.addTab(self._build_bag_tab(), "Itens iniciais (bolsa)")
+        self.main_tabs.addTab(self._build_class_tab(), "")
+        self.main_tabs.addTab(self._build_bag_tab(), "")
         root.addWidget(self.main_tabs, 1)
 
         bottom = QHBoxLayout()
         self.lbl_active = QLabel()
         self.lbl_active.setWordWrap(True)
         bottom.addWidget(self.lbl_active, 1)
-        self.btn_apply = QPushButton("Aplicar no jogo")
+        self.btn_apply = QPushButton()
         self.btn_apply.setObjectName("Primary")
         self.btn_apply.clicked.connect(self.apply_mod)
         bottom.addWidget(self.btn_apply)
-        self.btn_restore = QPushButton("Restaurar jogo original")
+        self.btn_restore = QPushButton()
         self.btn_restore.setObjectName("Secondary")
         self.btn_restore.clicked.connect(self.restore)
         bottom.addWidget(self.btn_restore)
@@ -132,6 +108,7 @@ class MainWindow(QMainWindow):
         self.log_box.setMaximumHeight(64)
         root.addWidget(self.log_box)
         self.setCentralWidget(central)
+        self.retranslate_ui()
 
     def _build_banner(self) -> QFrame:
         banner = QFrame()
@@ -145,11 +122,16 @@ class MainWindow(QMainWindow):
         texts.setSpacing(0)
         title = QLabel("SOLO RAMZA MANAGER")
         title.setObjectName("BannerTitle")
-        subtitle = QLabel("Final Fantasy Tactics · The Ivalice Chronicles — gerenciador de runs solo do Ramza")
-        subtitle.setObjectName("BannerSubtitle")
+        self.banner_subtitle = QLabel()
+        self.banner_subtitle.setObjectName("BannerSubtitle")
         texts.addWidget(title)
-        texts.addWidget(subtitle)
+        texts.addWidget(self.banner_subtitle)
         layout.addLayout(texts, 1)
+        self.lang_combo = QComboBox()
+        self.lang_combo.addItem("PT-BR", i18n.LANG_PT)
+        self.lang_combo.addItem("EN", i18n.LANG_EN)
+        self.lang_combo.currentIndexChanged.connect(self._lang_combo_changed)
+        layout.addWidget(self.lang_combo, 0, Qt.AlignBottom)
         version = QLabel(f"v{__version__}")
         version.setObjectName("BannerSubtitle")
         layout.addWidget(version, 0, Qt.AlignBottom)
@@ -160,8 +142,8 @@ class MainWindow(QMainWindow):
         return f"<html><head><style>{theme.PREVIEW_CSS}</style></head><body>{body}</body></html>"
 
     def _build_setup(self) -> QGroupBox:
-        setup = QGroupBox(theme.ornament("Configuração"))
-        outer = QVBoxLayout(setup)
+        self.setup_group = QGroupBox()
+        outer = QVBoxLayout(self.setup_group)
         outer.setContentsMargins(8, 4, 8, 4)
         header = QHBoxLayout()
         self.lbl_setup_summary = QLabel()
@@ -169,6 +151,9 @@ class MainWindow(QMainWindow):
         self.btn_setup_toggle = QPushButton()
         self.btn_setup_toggle.clicked.connect(self._toggle_setup)
         header.addWidget(self.btn_setup_toggle)
+        self.btn_wizard = QPushButton()
+        self.btn_wizard.clicked.connect(self.open_wizard)
+        header.addWidget(self.btn_wizard)
         outer.addLayout(header)
         self.setup_details = QWidget()
         outer.addWidget(self.setup_details)
@@ -180,27 +165,41 @@ class MainWindow(QMainWindow):
         self.lbl_modloader = QLabel()
         self.lbl_dotnet = QLabel()
         self.lbl_data = QLabel()
+        self.lbl_row_game = QLabel()
+        self.lbl_row_reloaded = QLabel()
+        self.lbl_row_modloader = QLabel()
+        self.lbl_row_dotnet = QLabel()
+        self.lbl_row_data = QLabel()
+        self.btn_browse_game = QPushButton()
+        self.btn_browse_game.clicked.connect(self.browse_game)
+        self.btn_browse_reloaded = QPushButton()
+        self.btn_browse_reloaded.clicked.connect(self.browse_reloaded)
+        self.btn_dl_reloaded = QPushButton()
+        self.btn_dl_reloaded.clicked.connect(lambda: self._open(URL_RELOADED))
+        self.btn_dl_modloader = QPushButton()
+        self.btn_dl_modloader.clicked.connect(lambda: self._open(URL_MODLOADER))
+        self.btn_dl_dotnet = QPushButton()
+        self.btn_dl_dotnet.clicked.connect(lambda: self._open(URL_DOTNET))
+        self.btn_extract = QPushButton()
+        self.btn_extract.clicked.connect(self.extract_data)
         rows = [
-            ("Jogo:", self.lbl_game, [("Procurar...", self.browse_game)]),
-            ("Reloaded-II:", self.lbl_reloaded, [("Procurar...", self.browse_reloaded),
-                                                 ("Baixar", lambda: self._open(URL_RELOADED))]),
-            ("FFTIVC Mod Loader:", self.lbl_modloader, [("Baixar", lambda: self._open(URL_MODLOADER))]),
-            (".NET 9 Runtime:", self.lbl_dotnet, [("Baixar", lambda: self._open(URL_DOTNET))]),
-            ("Dados do jogo:", self.lbl_data, [("Extrair / atualizar", self.extract_data)]),
+            (self.lbl_row_game, self.lbl_game, [self.btn_browse_game]),
+            (self.lbl_row_reloaded, self.lbl_reloaded, [self.btn_browse_reloaded, self.btn_dl_reloaded]),
+            (self.lbl_row_modloader, self.lbl_modloader, [self.btn_dl_modloader]),
+            (self.lbl_row_dotnet, self.lbl_dotnet, [self.btn_dl_dotnet]),
+            (self.lbl_row_data, self.lbl_data, [self.btn_extract]),
         ]
         for r, (title, label, buttons) in enumerate(rows):
-            grid.addWidget(QLabel(f"<b>{title}</b>"), r, 0)
+            grid.addWidget(title, r, 0)
             label.setTextInteractionFlags(Qt.TextSelectableByMouse)
             grid.addWidget(label, r, 1)
             box = QHBoxLayout()
-            for text, slot in buttons:
-                btn = QPushButton(text)
-                btn.clicked.connect(slot)
+            for btn in buttons:
                 box.addWidget(btn)
             box.addStretch()
             grid.addLayout(box, r, 2)
         grid.setColumnStretch(1, 1)
-        return setup
+        return self.setup_group
 
     def _toggle_setup(self) -> None:
         self._setup_expanded = not self.setup_details.isVisible()
@@ -211,23 +210,97 @@ class MainWindow(QMainWindow):
             self._setup_all_ok = all_ok
         expanded = self._setup_expanded if self._setup_expanded is not None else not self._setup_all_ok
         self.setup_details.setVisible(expanded)
-        self.btn_setup_toggle.setText("Ocultar detalhes ▴" if expanded else "Detalhes ▾")
+        self.btn_setup_toggle.setText(i18n.t("btn_hide_details") if expanded else i18n.t("btn_show_details"))
+
+    def retranslate_ui(self) -> None:
+        t = i18n.t
+        self.setWindowTitle(t("window_title", version=__version__))
+        self.banner_subtitle.setText(t("banner_subtitle"))
+        self.lang_combo.setToolTip(t("lang_tip"))
+        self._sync_lang_combo()
+        self.main_tabs.setTabText(0, t("tab_class"))
+        self.main_tabs.setTabText(1, t("tab_bag"))
+        self.btn_apply.setText(t("btn_apply"))
+        self.btn_restore.setText(t("btn_restore"))
+        self.setup_group.setTitle(theme.ornament(t("setup_title")))
+        self.btn_wizard.setText(t("btn_wizard"))
+        self.lbl_row_game.setText(f"<b>{t('row_game')}</b>")
+        self.lbl_row_reloaded.setText(f"<b>{t('row_reloaded')}</b>")
+        self.lbl_row_modloader.setText(f"<b>{t('row_modloader')}</b>")
+        self.lbl_row_dotnet.setText(f"<b>{t('row_dotnet')}</b>")
+        self.lbl_row_data.setText(f"<b>{t('row_data')}</b>")
+        for btn in (self.btn_browse_game, self.btn_browse_reloaded):
+            btn.setText(t("btn_browse"))
+        for btn in (self.btn_dl_reloaded, self.btn_dl_modloader, self.btn_dl_dotnet):
+            btn.setText(t("btn_download"))
+        self.btn_extract.setText(t("btn_extract"))
+        self.chk_class.setText(t("chk_class"))
+        self.lbl_jp.setText(t("lbl_jp"))
+        self.jp_spin.setToolTip(t("tip_jp"))
+        self.search.setPlaceholderText(t("search_class"))
+        for index, key in enumerate(self.lists):
+            self.tabs.setTabText(index, class_catalog.category_labels()[key])
+        self.chk_bag.setText(t("chk_bag"))
+        self.bag_help.setText(t("bag_help"))
+        self.item_search.setPlaceholderText(t("search_item"))
+        self.lbl_qty.setText(t("lbl_qty"))
+        self.btn_add.setText(t("btn_add"))
+        self.lbl_my_list.setText(t("lbl_my_list"))
+        self.bag_table.setHorizontalHeaderLabels([t("col_item"), t("col_type"), t("col_qty")])
+        self.btn_remove.setText(t("btn_remove"))
+        self.btn_clear.setText(t("btn_clear"))
+        self.btn_deluxe.setText(t("btn_deluxe"))
+        if hasattr(self, "_setup_all_ok"):
+            self._update_setup_visibility(None)
+
+    def _sync_lang_combo(self) -> None:
+        idx = self.lang_combo.findData(i18n.get_language())
+        self.lang_combo.blockSignals(True)
+        self.lang_combo.setCurrentIndex(idx if idx >= 0 else 0)
+        self.lang_combo.blockSignals(False)
+
+    def _lang_combo_changed(self, _index: int) -> None:
+        lang = self.lang_combo.currentData()
+        if lang and lang != i18n.get_language():
+            self.apply_language(lang)
+
+    def apply_language(self, lang: str) -> None:
+        if lang not in i18n.LANGS:
+            return
+        i18n.set_language(lang)
+        if self.settings.language != lang:
+            self.settings.language = lang
+            self.settings.save()
+        self.retranslate_ui()
+        self.refresh_all()
+
+    def open_wizard(self) -> None:
+        dlg = SetupWizard(self.settings, self)
+        dlg.language_changed.connect(self.apply_language)
+        if dlg.exec() == QDialog.Accepted:
+            self.settings.wizard_done = True
+            self.settings.save()
+        self._autodetect()
+        if self.settings.language in i18n.LANGS:
+            self.apply_language(self.settings.language)
+        else:
+            self.refresh_all()
 
     def _build_class_tab(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
 
         top = QHBoxLayout()
-        self.chk_class = QCheckBox("Trocar a classe do Ramza")
+        self.chk_class = QCheckBox()
         self.chk_class.setChecked(self.settings.change_class)
         self.chk_class.toggled.connect(self._class_toggled)
         top.addWidget(self.chk_class)
         top.addStretch()
-        top.addWidget(QLabel("Custo de JP das skills:"))
+        self.lbl_jp = QLabel()
+        top.addWidget(self.lbl_jp)
         self.jp_spin = QSpinBox()
         self.jp_spin.setRange(0, 9999)
         self.jp_spin.setValue(self.settings.jp_cost)
-        self.jp_spin.setToolTip("0 = grátis. Se o jogo não deixar aprender com 0, use 1.")
         self.jp_spin.valueChanged.connect(self._jp_changed)
         top.addWidget(self.jp_spin)
         layout.addLayout(top)
@@ -237,13 +310,13 @@ class MainWindow(QMainWindow):
         left_layout = QVBoxLayout(left)
         left_layout.setContentsMargins(0, 0, 0, 0)
         self.search = QLineEdit()
-        self.search.setPlaceholderText("Buscar classe ou skillset...")
+        self.search.setPlaceholderText("")
         self.search.textChanged.connect(self.fill_lists)
         left_layout.addWidget(self.search)
         self.tabs = QTabWidget()
         self.tabs.setObjectName("SubTabs")
         self.lists: dict[str, QListWidget] = {}
-        for key, label in class_catalog.CATEGORY_LABELS.items():
+        for key, label in class_catalog.category_labels().items():
             lst = QListWidget()
             lst.currentItemChanged.connect(self.show_preview)
             self.lists[key] = lst
@@ -261,13 +334,14 @@ class MainWindow(QMainWindow):
     def _build_bag_tab(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        self.chk_bag = QCheckBox("Trocar os itens do bônus da Deluxe Edition pela minha lista")
+        self.chk_bag = QCheckBox()
         self.chk_bag.setChecked(self.settings.change_bag)
         self.chk_bag.toggled.connect(self._bag_toggled)
         layout.addWidget(self.chk_bag)
-        help_label = QLabel(BAG_HELP)
-        help_label.setWordWrap(True)
-        layout.addWidget(help_label)
+        self.bag_help = QLabel()
+        self.bag_help.setWordWrap(True)
+        self.bag_help.setTextFormat(Qt.RichText)
+        layout.addWidget(self.bag_help)
 
         self.bag_body = QSplitter(Qt.Horizontal)
 
@@ -275,20 +349,21 @@ class MainWindow(QMainWindow):
         left_layout = QVBoxLayout(left)
         left_layout.setContentsMargins(0, 0, 0, 0)
         self.item_search = QLineEdit()
-        self.item_search.setPlaceholderText("Buscar item ou tipo (ex.: Elixir, Sword, Ring)...")
+        self.item_search.setPlaceholderText("")
         self.item_search.textChanged.connect(self.fill_item_list)
         left_layout.addWidget(self.item_search)
         self.item_list = QListWidget()
         self.item_list.itemDoubleClicked.connect(lambda _i: self.add_bag_item())
         left_layout.addWidget(self.item_list, 1)
         add_row = QHBoxLayout()
-        add_row.addWidget(QLabel("Quantidade:"))
+        self.lbl_qty = QLabel()
+        add_row.addWidget(self.lbl_qty)
         self.qty_spin = QSpinBox()
         self.qty_spin.setRange(1, MAX_QUANTITY)
         add_row.addWidget(self.qty_spin)
-        btn_add = QPushButton("Adicionar →")
-        btn_add.clicked.connect(self.add_bag_item)
-        add_row.addWidget(btn_add)
+        self.btn_add = QPushButton()
+        self.btn_add.clicked.connect(self.add_bag_item)
+        add_row.addWidget(self.btn_add)
         add_row.addStretch()
         left_layout.addLayout(add_row)
         self.bag_body.addWidget(left)
@@ -296,9 +371,9 @@ class MainWindow(QMainWindow):
         right = QWidget()
         right_layout = QVBoxLayout(right)
         right_layout.setContentsMargins(0, 0, 0, 0)
-        right_layout.addWidget(QLabel("<b>Minha lista</b>"))
+        self.lbl_my_list = QLabel()
+        right_layout.addWidget(self.lbl_my_list)
         self.bag_table = QTableWidget(0, 3)
-        self.bag_table.setHorizontalHeaderLabels(["Item", "Tipo", "Qtd"])
         self.bag_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
         self.bag_table.verticalHeader().setVisible(False)
         self.bag_table.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -306,13 +381,13 @@ class MainWindow(QMainWindow):
         self.bag_table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         right_layout.addWidget(self.bag_table, 1)
         buttons = QHBoxLayout()
-        for text, slot in (
-            ("Remover selecionado", self.remove_bag_item),
-            ("Limpar", self.clear_bag),
-            ("Padrão da Deluxe", self.reset_bag_to_deluxe),
-        ):
-            btn = QPushButton(text)
-            btn.clicked.connect(slot)
+        self.btn_remove = QPushButton()
+        self.btn_remove.clicked.connect(self.remove_bag_item)
+        self.btn_clear = QPushButton()
+        self.btn_clear.clicked.connect(self.clear_bag)
+        self.btn_deluxe = QPushButton()
+        self.btn_deluxe.clicked.connect(self.reset_bag_to_deluxe)
+        for btn in (self.btn_remove, self.btn_clear, self.btn_deluxe):
             buttons.addWidget(btn)
         buttons.addStretch()
         right_layout.addLayout(buttons)
@@ -383,21 +458,25 @@ class MainWindow(QMainWindow):
 
     def refresh_all(self) -> None:
         game = self.game_root()
-        self.lbl_game.setText(self._status(bool(game), str(game) if game else "não encontrado"))
+        self.lbl_game.setText(self._status(bool(game), str(game) if game else i18n.t("status_not_found")))
         rel = self.reloaded_root()
-        self.lbl_reloaded.setText(self._status(bool(rel), str(rel) if rel else "não encontrado — instale e aponte a pasta"))
+        self.lbl_reloaded.setText(self._status(
+            bool(rel), str(rel) if rel else i18n.t("status_reloaded_missing")))
         loader = bool(rel and reloaded.is_mod_installed(rel, reloaded.MODLOADER_ID))
-        self.lbl_modloader.setText(self._status(loader, "instalado" if loader else "não encontrado na pasta Mods do Reloaded-II"))
-        dotnet = dotnet9_installed()
-        self.lbl_dotnet.setText(self._status(dotnet, "instalado" if dotnet else "necessário para ler os dados do jogo"))
+        self.lbl_modloader.setText(self._status(
+            loader, i18n.t("status_installed") if loader else i18n.t("status_modloader_missing")))
+        dotnet = prereqs.dotnet9_installed()
+        self.lbl_dotnet.setText(self._status(
+            dotnet, i18n.t("status_installed") if dotnet else i18n.t("status_dotnet_needed")))
         ready = self.data_ready()
-        self.lbl_data.setText(self._status(ready, "prontos" if ready else "clique em 'Extrair / atualizar' (uns 10 segundos)"))
+        self.lbl_data.setText(self._status(
+            ready, i18n.t("status_data_ready") if ready else i18n.t("status_data_missing")))
         checks = [bool(game), bool(rel), loader, dotnet, ready]
         all_ok = all(checks)
         if all_ok:
-            summary = self._status(True, "Tudo pronto: jogo, Reloaded-II, Mod Loader, .NET 9 e dados do jogo")
+            summary = self._status(True, i18n.t("status_all_ok"))
         else:
-            summary = self._status(False, f"Falta configurar {checks.count(False)} item(ns) — veja abaixo")
+            summary = self._status(False, i18n.t("status_missing", n=checks.count(False)))
         self.lbl_setup_summary.setText(summary)
         self._update_setup_visibility(all_ok)
 
@@ -421,12 +500,12 @@ class MainWindow(QMainWindow):
         rel = self.reloaded_root()
         installed = mod_builder.read_installed(reloaded.mods_folder(rel)) if rel else None
         if not installed:
-            self.lbl_active.setText("Mod atual: <b>nenhum</b> (jogo original)")
+            self.lbl_active.setText(i18n.t("mod_none"))
             return
-        klass = installed.get("ClassName") or "original (Squire)"
+        klass = installed.get("ClassName") or i18n.t("mod_original_class")
         bag = installed.get("BagItems") or []
-        bag_text = f"{len(bag)} item(ns) no bônus" if bag else "bônus original"
-        self.lbl_active.setText(f"Mod atual: Ramza = <b>{html.escape(klass)}</b> · Bolsa: <b>{bag_text}</b>")
+        bag_text = i18n.t("mod_bag_count", n=len(bag)) if bag else i18n.t("mod_bag_original")
+        self.lbl_active.setText(i18n.t("mod_active", klass=html.escape(klass), bag=html.escape(bag_text)))
 
     # --------------------------------------------------------- class tab
 
@@ -446,7 +525,7 @@ class MainWindow(QMainWindow):
                     continue
                 item = QListWidgetItem(label)
                 item.setData(Qt.UserRole, option)
-                item.setToolTip(f"Job {option.job_id} · skillset {option.job.job_command_id}")
+                item.setToolTip(i18n.t("tip_job", job=option.job_id, cmd=option.job.job_command_id))
                 lst.addItem(item)
         self.show_preview()
 
@@ -469,13 +548,7 @@ class MainWindow(QMainWindow):
     def show_preview(self, *_args) -> None:
         option = self.selected_option()
         if option is None:
-            self.preview.setHtml(self._page(
-                "<h2>Escolha uma classe</h2>"
-                "<p>Selecione uma classe na lista para ver skills, equipamentos e atributos.</p>"
-                "<p>Ao aplicar, as três classes próprias do Ramza (Cap. 1, Cap. 2–3 e Cap. 4) viram a "
-                "classe escolhida. Ele continua começando no nível 1 e evolui normalmente. "
-                "O resto do jogo não muda.</p>"
-            ))
+            self.preview.setHtml(self._page(i18n.t("preview_empty")))
             return
         job = option.job
         plan = mod_builder.plan_build(self.tables, job.id, option.name)
@@ -485,7 +558,7 @@ class MainWindow(QMainWindow):
 
         def ability_rows(ids: list[int]) -> str:
             if not ids:
-                return "<i>nenhuma</i>"
+                return f"<i>{i18n.t('none_f')}</i>"
             rows = []
             for ab_id in ids:
                 old = self.jp_costs.get(ab_id)
@@ -500,36 +573,29 @@ class MainWindow(QMainWindow):
             f"<td align='right'>{f.get(key + 'Growth', '?')}</td></tr>"
             for key, label in STAT_ROWS
         )
-        innate = ", ".join(esc(self.ability_name(i)) for i in job.innate_ability_ids) or "nenhuma"
+        innate = ", ".join(esc(self.ability_name(i)) for i in job.innate_ability_ids) or i18n.t("none_f")
         parts = [f"<h2>{esc(option.name)}</h2>"]
         if option.experimental:
-            parts.append(
-                "<p class='warn'><b>⚠ Experimental:</b> classe de chefe/inimigo. Pode ter "
-                "animações faltando ou travar o jogo com o sprite do Ramza. Salve antes de testar.</p>"
-            )
-        parts.append(
-            f"<p><b>Skillset:</b> {esc(option.skillset_name or 'próprio')} · "
-            f"<b>Move</b> {f.get('Move')} · <b>Jump</b> {f.get('Jump')} · "
-            f"<b>Evasão</b> {f.get('CharacterEvasion')}% · <span class='muted'>Job {job.id}</span></p>"
-        )
-        parts.append("<h3>Habilidades de ação</h3>" + ability_rows(command.action_ids if command else []))
-        parts.append("<h3>Reação / Suporte / Movimento</h3>" + ability_rows(command.rsm_ids if command else []))
-        parts.append(f"<p><b>Habilidades inatas:</b> {innate}</p>")
-        parts.append(f"<p><b>Equipamentos:</b> {esc(', '.join(job.equippable) or 'nenhum')}</p>")
-        parts.append(
-            "<h3>Atributos</h3><table cellspacing=4><tr><th></th><th>Multiplicador</th>"
-            f"<th>Crescimento*</th></tr>{stats}</table>"
-            "<p class='muted'>* crescimento: quanto menor, mais o atributo sobe por nível.</p>"
-        )
+            parts.append(i18n.t("warn_experimental"))
+        parts.append(i18n.t(
+            "preview_skillset",
+            name=esc(option.skillset_name or i18n.t("own_skillset")),
+            move=f.get("Move"), jump=f.get("Jump"), evade=f.get("CharacterEvasion"), job=job.id,
+        ))
+        parts.append(i18n.t("h_action") + ability_rows(command.action_ids if command else []))
+        parts.append(i18n.t("h_rsm") + ability_rows(command.rsm_ids if command else []))
+        parts.append(i18n.t("innate", names=innate))
+        parts.append(i18n.t("equip", names=esc(", ".join(job.equippable) or i18n.t("none_m"))))
+        parts.append(i18n.t("h_stats", rows=stats))
         extras = [s for s in (f.get("InnateStatus"), f.get("StartingStatus")) if s and s != "None"]
         if extras:
-            parts.append(f"<p><b>Status inato/inicial:</b> {esc(' / '.join(extras))}</p>")
+            parts.append(i18n.t("status_line", names=esc(" / ".join(extras))))
         if plan.spawn_changes:
             changes = "".join(
                 f"<li>{slot}: {esc(self.item_name(old))} → {esc(self.item_name(new))}</li>"
                 for slot, (old, new) in plan.spawn_changes.items()
             )
-            parts.append(f"<h3>Equipamento inicial ajustado</h3><ul>{changes}</ul>")
+            parts.append(f"{i18n.t('h_gear')}<ul>{changes}</ul>")
         self.preview.setHtml(self._page("".join(parts)))
 
     # ----------------------------------------------------------- bag tab
@@ -606,20 +672,20 @@ class MainWindow(QMainWindow):
     # ------------------------------------------------------------- actions
 
     def browse_game(self) -> None:
-        folder = QFileDialog.getExistingDirectory(self, "Pasta do jogo (onde fica FFT_enhanced.exe)")
+        folder = QFileDialog.getExistingDirectory(self, i18n.t("dlg_game_folder"))
         if folder:
             if not game_install.looks_like_game_root(Path(folder)):
-                QMessageBox.warning(self, "Pasta inválida", "Não encontrei FFT_enhanced.exe nessa pasta.")
+                QMessageBox.warning(self, i18n.t("dlg_bad_folder"), i18n.t("dlg_no_exe"))
                 return
             self.settings.game_root = folder
             self.settings.save()
             self.refresh_all()
 
     def browse_reloaded(self) -> None:
-        folder = QFileDialog.getExistingDirectory(self, "Pasta do Reloaded-II (onde fica Reloaded-II.exe)")
+        folder = QFileDialog.getExistingDirectory(self, i18n.t("dlg_reloaded_folder"))
         if folder:
             if not reloaded.looks_like_reloaded_install(Path(folder)):
-                QMessageBox.warning(self, "Pasta inválida", "Não encontrei Reloaded-II.exe nessa pasta.")
+                QMessageBox.warning(self, i18n.t("dlg_bad_folder"), i18n.t("dlg_no_reloaded"))
                 return
             self.settings.reloaded_root = folder
             self.settings.save()
@@ -656,35 +722,34 @@ class MainWindow(QMainWindow):
 
     def _worker_failed(self, message: str) -> None:
         self._finish_worker()
-        QMessageBox.critical(self, "Erro", message)
+        QMessageBox.critical(self, i18n.t("err_title"), message)
 
     def extract_data(self) -> None:
         game = self.game_root()
         if not game:
-            QMessageBox.warning(self, "Jogo não encontrado", "Aponte a pasta do jogo primeiro.")
+            QMessageBox.warning(self, i18n.t("dlg_no_game"), i18n.t("dlg_no_game_body"))
             return
-        if not dotnet9_installed():
-            QMessageBox.warning(self, ".NET 9", "Instale o .NET 9 Runtime (botão 'Baixar') e tente de novo.")
+        if not prereqs.dotnet9_installed():
+            QMessageBox.warning(self, i18n.t("dlg_dotnet_title"), i18n.t("dlg_dotnet_body"))
             return
 
         def work(log):
             return nxd_db.extract_vanilla_db(game, paths.ff16tools_cli(), paths.cache_dir(), paths.vanilla_sqlite(), log)
 
-        self._run(work, lambda _r: self.refresh_all(), "Extraindo tabelas do jogo (só leitura)...")
+        self._run(work, lambda _r: self.refresh_all(), i18n.t("log_extract"))
 
     def _require_ready(self) -> Optional[Path]:
         rel = self.reloaded_root()
         problems = []
         if not self.data_ready():
-            problems.append("• Extraia os dados do jogo (botão 'Extrair / atualizar').")
+            problems.append(i18n.t("need_extract"))
         if not rel:
-            problems.append("• Instale o Reloaded-II e aponte a pasta dele.")
+            problems.append(i18n.t("need_reloaded"))
         if problems:
-            QMessageBox.warning(self, "Falta configurar", "\n".join(problems))
+            QMessageBox.warning(self, i18n.t("need_setup_title"), "\n".join(problems))
             return None
-        if reloaded_running():
-            QMessageBox.warning(self, "Feche o Reloaded-II",
-                                "Feche o Reloaded-II antes de continuar, senão ele desfaz a ativação do mod.")
+        if prereqs.reloaded_running():
+            QMessageBox.warning(self, i18n.t("close_reloaded_title"), i18n.t("close_reloaded_body"))
             return None
         return rel
 
@@ -693,27 +758,22 @@ class MainWindow(QMainWindow):
         if self.chk_class.isChecked():
             option = self.selected_option()
             if option is None:
-                QMessageBox.information(self, "Escolha uma classe",
-                                        "Selecione uma classe na aba 'Classe do Ramza', ou desmarque "
-                                        "'Trocar a classe do Ramza'.")
+                QMessageBox.information(self, i18n.t("pick_class_title"), i18n.t("pick_class_body"))
                 return
         bag = list(self.bag) if self.chk_bag.isChecked() else None
         if bag is not None and not bag:
-            QMessageBox.information(self, "Lista vazia",
-                                    "Adicione itens na aba 'Itens iniciais', ou desmarque a troca do bônus.")
+            QMessageBox.information(self, i18n.t("empty_bag_title"), i18n.t("empty_bag_body"))
             return
         if option is None and bag is None:
-            QMessageBox.information(self, "Nada para aplicar",
-                                    "Marque a troca de classe e/ou a troca dos itens. Para voltar ao jogo "
-                                    "original, use 'Restaurar jogo original'.")
+            QMessageBox.information(self, i18n.t("nothing_title"), i18n.t("nothing_body"))
             return
         rel = self._require_ready()
         if rel is None:
             return
         if option and option.experimental:
             answer = QMessageBox.question(
-                self, "Classe experimental",
-                f"{option.name} é uma classe de chefe/inimigo e pode travar o jogo.\nAplicar mesmo assim?")
+                self, i18n.t("experimental_title"),
+                i18n.t("experimental_body", name=option.name))
             if answer != QMessageBox.Yes:
                 return
 
@@ -734,42 +794,41 @@ class MainWindow(QMainWindow):
             return nxd_db.build_nxd_files(db, paths.ff16tools_cli(), work_dir, class_edit, p.bag, fallback_names)
 
         def work(log):
-            log("Gerando mod...")
+            log(i18n.t("log_building"))
             staged = mod_builder.build_mod(plan, paths.user_data_dir() / "build", nxd_builder)
             target = mod_builder.install_mod(staged, reloaded.mods_folder(rel))
-            log(f"Mod instalado em {target}")
+            log(i18n.t("log_installed", path=target))
             return reloaded.set_mod_enabled(rel, mod_builder.MOD_ID, True)
 
         def done(enabled: bool) -> None:
             self.refresh_active()
             lines = []
             if option:
-                lines.append(f"• Ramza agora é {option.name}.")
+                lines.append(i18n.t("done_class", name=option.name))
             if plan.bag:
-                lines.append(f"• Bônus da Deluxe trocado por {len(plan.bag)} item(ns). Comece um jogo novo para recebê-los.")
-            msg = "Pronto!\n\n" + "\n".join(lines) + "\n\n"
+                lines.append(i18n.t("done_bag", n=len(plan.bag)))
+            msg = i18n.t("done_intro") + "\n\n" + "\n".join(lines) + "\n\n"
             if enabled:
-                msg += "O mod já está ativado no Reloaded-II. Abra o jogo pelo Reloaded-II."
+                msg += i18n.t("done_ok")
             else:
-                msg += ("Não achei o FFT_enhanced.exe no Reloaded-II. Adicione o jogo lá e ative os mods "
-                        f"'{mod_builder.MOD_NAME}' e 'FFTIVC Mod Loader'.")
-            QMessageBox.information(self, "Mod aplicado", msg)
+                msg += i18n.t("done_no_app", mod=mod_builder.MOD_NAME)
+            QMessageBox.information(self, i18n.t("done_title"), msg)
 
-        self._run(work, done, "Aplicando...")
+        self._run(work, done, i18n.t("log_applying"))
 
     def restore(self) -> None:
         rel = self.reloaded_root()
         if rel is None:
-            QMessageBox.warning(self, "Falta configurar", "Aponte a pasta do Reloaded-II primeiro.")
+            QMessageBox.warning(self, i18n.t("need_setup_title"), i18n.t("restore_need"))
             return
-        if reloaded_running():
-            QMessageBox.warning(self, "Feche o Reloaded-II", "Feche o Reloaded-II antes de restaurar.")
+        if prereqs.reloaded_running():
+            QMessageBox.warning(self, i18n.t("close_reloaded_title"), i18n.t("close_reloaded_restore"))
             return
         removed = mod_builder.uninstall_mod(reloaded.mods_folder(rel))
         reloaded.set_mod_enabled(rel, mod_builder.MOD_ID, False)
         self.refresh_active()
-        self.log("Mod removido. Jogo original." if removed else "O mod não estava instalado.")
-        QMessageBox.information(self, "Restaurado", "O mod foi removido: Ramza e bônus voltaram ao original.")
+        self.log(i18n.t("log_removed") if removed else i18n.t("log_not_installed"))
+        QMessageBox.information(self, i18n.t("restored_title"), i18n.t("restored_body"))
 
 
 def main() -> int:
@@ -778,4 +837,6 @@ def main() -> int:
     theme.apply(app)
     window = MainWindow()
     window.show()
+    if not window.settings.wizard_done:
+        QTimer.singleShot(0, window.open_wizard)
     return app.exec()

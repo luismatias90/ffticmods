@@ -27,6 +27,8 @@ Troca a classe do Ramza em **FINAL FANTASY TACTICS - The Ivalice Chronicles (ver
 
 ## Como usar
 
+Na primeira abertura, um assistente pergunta se a interface fica em **português** ou **inglês** e percorre o que instalar e como configurar. Dá para reabri-lo pelo botão **Assistente**, e trocar o idioma a qualquer momento no canto da janela (PT-BR / EN).
+
 1. **Feche o Reloaded-II** e abra o `SoloRamzaManager.exe`.
 2. Confira o painel **Configuração**. O jogo e o Reloaded-II são detectados sozinhos; se não forem, use *Procurar...*
 3. Clique em **Extrair / atualizar** (leva uns 10 segundos, só lê o jogo). Repita depois de updates do jogo.

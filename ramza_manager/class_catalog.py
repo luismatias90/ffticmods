@@ -18,6 +18,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Optional
 
+from . import i18n
 from .tables import Job, ReferenceTables
 
 RAMZA_JOB_IDS = (1, 2, 3)
@@ -26,11 +27,12 @@ CATEGORY_GENERIC = "generic"
 CATEGORY_UNIQUE = "unique"
 CATEGORY_BOSS = "boss"
 
-CATEGORY_LABELS = {
-    CATEGORY_GENERIC: "Genéricas",
-    CATEGORY_UNIQUE: "Personagens únicos",
-    CATEGORY_BOSS: "Chefes / Inimigos ⚠",
-}
+def category_labels() -> dict[str, str]:
+    return {
+        CATEGORY_GENERIC: i18n.t("cat_generic"),
+        CATEGORY_UNIQUE: i18n.t("cat_unique"),
+        CATEGORY_BOSS: i18n.t("cat_boss"),
+    }
 
 _GENERIC_IDS = range(74, 94)
 _UNIQUE_IDS = range(4, 60)
@@ -53,8 +55,8 @@ class ClassOption:
         return self.category == CATEGORY_BOSS
 
     def label(self, ability_count: int) -> str:
-        skillset = self.skillset_name or "skillset próprio"
-        return f"{self.name} — {skillset} ({ability_count} skills)"
+        skillset = self.skillset_name or i18n.t("own_skillset")
+        return i18n.t("class_label", name=self.name, skillset=skillset, n=ability_count)
 
 
 def category_for(job_id: int) -> Optional[str]:

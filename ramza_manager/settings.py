@@ -19,6 +19,8 @@ class Settings:
     class_job_id: Optional[int] = None
     change_bag: bool = False
     bag_items: list = field(default_factory=list)  # [[item_id, quantidade], ...]
+    language: str = ""  # "pt" ou "en"; vazio até o assistente perguntar
+    wizard_done: bool = False
 
     @classmethod
     def load(cls) -> "Settings":
