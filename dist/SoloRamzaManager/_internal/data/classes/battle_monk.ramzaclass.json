@@ -1,0 +1,34 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "Battle Monk",
+  "skillset": "Fist Arts",
+  "author": "Solo Ramza Manager",
+  "description": "A monk who fights on the front line, rallying himself with war cries between blows.",
+  "base_job": 78,
+  "actions": [
+    100,
+    101,
+    102,
+    103,
+    104,
+    105,
+    106,
+    107,
+    146,
+    150,
+    151,
+    153
+  ],
+  "rsm": [
+    442,
+    431,
+    465,
+    493,
+    486
+  ],
+  "job": {
+    "move": 4
+  }
+}

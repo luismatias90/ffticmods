@@ -1,0 +1,56 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "Sage",
+  "skillset": "Sage Magicks",
+  "author": "Solo Ramza Manager",
+  "description": "A scholar who has mastered both white and black magicks, at the cost of a frail body.",
+  "base_job": 79,
+  "actions": [
+    1,
+    2,
+    3,
+    5,
+    6,
+    9,
+    11,
+    14,
+    15,
+    17,
+    18,
+    21,
+    22,
+    25,
+    26,
+    31
+  ],
+  "rsm": [
+    428,
+    435,
+    467,
+    482,
+    494,
+    486
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Rod",
+      "Staff",
+      "Book",
+      "Hat",
+      "Clothing",
+      "Robe",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "multipliers": {
+      "MA": 130
+    }
+  }
+}
