@@ -3,4 +3,4 @@ __pycache__/
 *.pyc
 .pytest_cache/
 build/
-dist/
+# dist/ é versionado de propósito: o app pronto para baixar em outro PC.

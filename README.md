@@ -2,6 +2,8 @@
 
 Troca a classe do Ramza em **FINAL FANTASY TACTICS - The Ivalice Chronicles (versão Enhanced)** por qualquer classe do jogo (genéricas, de personagens únicos ou de chefes/inimigos), com todas as skills da classe custando 0 JP. Feito para runs solo Ramza.
 
+**App pronto:** `dist\SoloRamzaManager\SoloRamzaManager.exe`. Em outro PC, basta clonar o repositório (ou baixar o ZIP pelo GitHub) e rodar esse `.exe`. Ele precisa da pasta `_internal` ao lado, então copie a pasta `SoloRamzaManager` inteira, não só o `.exe`. Não precisa de Python; só do **.NET 9 Runtime** (ver abaixo).
+
 ## O que muda e o que não muda
 
 **Muda (só no Ramza):**
