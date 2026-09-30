@@ -75,6 +75,62 @@ QGroupBox::title {{
 }}
 QGroupBox QLabel {{ color: {INK}; }}
 
+/* ---- Barra lateral (passos) ---- */
+QFrame#Sidebar {{
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1, stop:0 #2a1e13, stop:1 {WOOD_DARK});
+    border: 2px solid {GOLD_DARK}; border-radius: 6px;
+}}
+QLabel#SideCaption {{ color: {GOLD}; font-size: 8.5pt; font-weight: bold; letter-spacing: 2px; }}
+QPushButton#Nav {{
+    background: transparent; border: 1px solid transparent; border-left: 4px solid transparent;
+    border-radius: 5px; padding: 0;
+}}
+QPushButton#Nav:hover:!checked {{ background: #2e2216; border: 1px solid {WOOD_LIGHT}; border-left: 4px solid {GOLD_DARK}; }}
+QPushButton#Nav:checked {{ background: {WOOD_LIGHT}; border: 1px solid {GOLD_DARK}; border-left: 4px solid {GOLD}; }}
+QLabel#NavTitle {{ color: {PARCHMENT}; font-weight: bold; font-size: 11pt; }}
+QLabel#NavTitle[current="true"] {{ color: {GOLD_LIGHT}; }}
+QLabel#NavSubtitle {{ color: {PARCHMENT_DARK}; font-style: italic; font-size: 9.5pt; }}
+QLabel#NavBadge {{
+    color: {PARCHMENT_DARK}; background: {WOOD_DARK}; border: 2px solid {GOLD_DARK};
+    border-radius: 14px; font-weight: bold;
+}}
+QLabel#NavBadge[active="true"] {{ color: {GOLD_LIGHT}; background: {CRIMSON}; border: 2px solid {GOLD}; }}
+QFrame#InstalledCard {{ background: #120d08; border: 1px solid {GOLD_DARK}; border-radius: 5px; }}
+QFrame#InstalledCard QLabel {{ color: {TEXT_ON_WOOD}; }}
+QFrame#Sidebar QPushButton#Primary {{ padding: 10px 12px; }}
+
+/* ---- Páginas ---- */
+QFrame#Page {{ background: {PARCHMENT}; border: 2px solid {GOLD_DARK}; border-radius: 6px; }}
+QFrame#Page QLabel {{ color: {INK}; }}
+QFrame#Page QLabel#PageTitle {{ color: {CRIMSON}; font-size: 16pt; font-weight: bold; }}
+QFrame#Page QLabel#PageDesc {{ color: {INK_MUTED}; font-style: italic; }}
+QFrame#Page QLabel#Muted {{ color: {INK_MUTED}; font-style: italic; }}
+QFrame#Page QLabel#ColumnTitle {{ font-weight: bold; font-size: 11pt; }}
+QFrame#Page QLabel#Note {{
+    background: {PARCHMENT_ALT}; border: 1px solid {PARCHMENT_DARK}; border-left: 4px solid {GOLD};
+    border-radius: 4px; padding: 6px 10px;
+}}
+QFrame#Rule {{ background: {GOLD_DARK}; border: none; }}
+QCheckBox#SectionToggle {{
+    background: {PARCHMENT_ALT}; border: 1px solid {GOLD_DARK}; border-radius: 5px; padding: 6px 12px;
+}}
+QFrame#ActionBar {{ background: {PARCHMENT_ALT}; border: 1px solid {GOLD_DARK}; border-radius: 4px; }}
+QPushButton#Chip {{
+    color: {INK}; background: {PARCHMENT_ALT};
+    border: 1px solid {GOLD_DARK}; border-radius: 13px; padding: 4px 14px;
+}}
+QPushButton#Chip:hover:!checked {{ background: #fbf3de; border: 1px solid {GOLD}; }}
+QPushButton#Chip:checked {{ color: {GOLD_LIGHT}; background: {CRIMSON}; border: 1px solid {GOLD}; font-weight: bold; }}
+QPushButton#Chip:disabled {{ color: #9c8a6a; }}
+QPushButton#Accent {{
+    color: {GOLD_LIGHT}; font-weight: bold; background: {WOOD_LIGHT}; border: 1px solid {GOLD};
+}}
+QPushButton#Accent:hover {{ background: #4a3622; }}
+QPushButton#Accent:disabled {{ color: #8a7650; border: 1px solid {GOLD_DARK}; }}
+QPushButton#Danger {{ color: {CRIMSON}; }}
+QPushButton#Danger:disabled {{ color: #9c8a6a; }}
+QListWidget:disabled, QTableWidget:disabled, QTextBrowser:disabled {{ color: #9c8a6a; }}
+
 /* ---- Abas ---- */
 QTabWidget::pane {{
     background: {PARCHMENT};

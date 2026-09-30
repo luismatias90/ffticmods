@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import Callable, Optional
 
 from PySide6.QtCore import QObject, Qt, QThread, QTimer, QUrl, Signal
-from PySide6.QtGui import QDesktopServices
+from PySide6.QtGui import QColor, QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
-    QAbstractItemView, QApplication, QCheckBox, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout, QGroupBox,
-    QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
-    QPlainTextEdit, QPushButton, QSpinBox, QSplitter, QTableWidget, QTableWidgetItem, QTabWidget,
+    QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout,
+    QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
+    QPlainTextEdit, QPushButton, QSpinBox, QSplitter, QStackedWidget, QTableWidget, QTableWidgetItem,
     QTextBrowser, QVBoxLayout, QWidget,
 )
 
@@ -35,6 +35,59 @@ URL_MODLOADER = "https://github.com/Nenkai/fftivc.utility.modloader/releases/lat
 URL_DOTNET = "https://dotnet.microsoft.com/download/dotnet/9.0"
 
 STAT_ROWS = [("HP", "HP"), ("MP", "MP"), ("Speed", "Speed"), ("PA", "PA"), ("MA", "MA")]
+
+# Filtros da lista de classes (além das categorias de class_catalog) e tipos de entrada.
+FILTER_ALL = "all"
+FILTER_CUSTOM = "custom"
+ENTRY_CATALOG = "catalog"
+ENTRY_CUSTOM = "custom"
+
+
+class NavButton(QPushButton):
+    """Passo da barra lateral: número, título e o resumo do que será aplicado."""
+
+    def __init__(self, step: str):
+        super().__init__()
+        self.setObjectName("Nav")
+        self.setCheckable(True)
+        self.setAutoExclusive(True)
+        self.setCursor(Qt.PointingHandCursor)
+        self.setMinimumHeight(62)
+        layout = QHBoxLayout(self)
+        layout.setContentsMargins(10, 8, 10, 8)
+        layout.setSpacing(10)
+        self.badge = QLabel(step)
+        self.badge.setObjectName("NavBadge")
+        self.badge.setAlignment(Qt.AlignCenter)
+        self.badge.setFixedSize(28, 28)
+        layout.addWidget(self.badge, 0, Qt.AlignVCenter)
+        texts = QVBoxLayout()
+        texts.setSpacing(1)
+        self.title = QLabel()
+        self.title.setObjectName("NavTitle")
+        self.subtitle = QLabel()
+        self.subtitle.setObjectName("NavSubtitle")
+        texts.addWidget(self.title)
+        texts.addWidget(self.subtitle)
+        layout.addLayout(texts, 1)
+        for label in (self.badge, self.title, self.subtitle):
+            label.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.toggled.connect(lambda _c: self._repolish())
+
+    def set_texts(self, title: str, subtitle: str, active: bool) -> None:
+        self.title.setText(title)
+        metrics = self.subtitle.fontMetrics()
+        self.subtitle.setText(metrics.elidedText(subtitle, Qt.ElideRight, 170))
+        self.subtitle.setToolTip(subtitle)
+        self.badge.setProperty("active", active)
+        self._repolish()
+
+    def _repolish(self) -> None:
+        # O QSS dos rótulos depende do estado do botão; o Qt não reaplica sozinho nos filhos.
+        for label in (self.badge, self.title, self.subtitle):
+            label.setProperty("current", self.isChecked())
+            label.style().unpolish(label)
+            label.style().polish(label)
 
 
 class Worker(QObject):
@@ -91,31 +144,98 @@ class MainWindow(QMainWindow):
         root.addWidget(self._build_banner())
         root.addWidget(self._build_setup())
 
-        self.main_tabs = QTabWidget()
-        self.main_tabs.addTab(self._build_class_tab(), "")
-        self.main_tabs.addTab(self._build_bag_tab(), "")
-        root.addWidget(self.main_tabs, 1)
-
-        bottom = QHBoxLayout()
-        self.lbl_active = QLabel()
-        self.lbl_active.setWordWrap(True)
-        bottom.addWidget(self.lbl_active, 1)
-        self.btn_apply = QPushButton()
-        self.btn_apply.setObjectName("Primary")
-        self.btn_apply.clicked.connect(self.apply_mod)
-        bottom.addWidget(self.btn_apply)
-        self.btn_restore = QPushButton()
-        self.btn_restore.setObjectName("Secondary")
-        self.btn_restore.clicked.connect(self.restore)
-        bottom.addWidget(self.btn_restore)
-        root.addLayout(bottom)
+        body = QHBoxLayout()
+        body.setSpacing(10)
+        self.pages = QStackedWidget()
+        self.pages.addWidget(self._build_class_tab())
+        self.pages.addWidget(self._build_bag_tab())
+        body.addWidget(self._build_sidebar())
+        body.addWidget(self.pages, 1)
+        root.addLayout(body, 1)
 
         self.log_box = QPlainTextEdit()
         self.log_box.setReadOnly(True)
-        self.log_box.setMaximumHeight(64)
+        self.log_box.setMaximumHeight(60)
         root.addWidget(self.log_box)
         self.setCentralWidget(central)
+
+        QShortcut(QKeySequence.Find, self, self._focus_search)
+        QShortcut(QKeySequence.New, self, self.new_custom)
+        QShortcut(QKeySequence.Delete, self.bag_table, self.remove_bag_item, context=Qt.WidgetShortcut)
         self.retranslate_ui()
+
+    def _build_sidebar(self) -> QFrame:
+        """Barra lateral: os passos (classe, bolsa) com o resumo do que será aplicado, e os botões finais."""
+        side = QFrame()
+        side.setObjectName("Sidebar")
+        side.setFixedWidth(250)
+        layout = QVBoxLayout(side)
+        layout.setContentsMargins(10, 12, 10, 12)
+        layout.setSpacing(6)
+        self.lbl_nav_caption = QLabel()
+        self.lbl_nav_caption.setObjectName("SideCaption")
+        layout.addWidget(self.lbl_nav_caption)
+        self.nav_class = NavButton("1")
+        self.nav_bag = NavButton("2")
+        for index, btn in enumerate((self.nav_class, self.nav_bag)):
+            btn.clicked.connect(lambda _c=False, i=index: self._go_page(i))
+            layout.addWidget(btn)
+        self.nav_class.setChecked(True)
+        layout.addStretch()
+
+        card = QFrame()
+        card.setObjectName("InstalledCard")
+        card_layout = QVBoxLayout(card)
+        card_layout.setContentsMargins(10, 8, 10, 8)
+        self.lbl_installed_caption = QLabel()
+        self.lbl_installed_caption.setObjectName("SideCaption")
+        card_layout.addWidget(self.lbl_installed_caption)
+        self.lbl_active = QLabel()
+        self.lbl_active.setWordWrap(True)
+        card_layout.addWidget(self.lbl_active)
+        layout.addWidget(card)
+
+        self.btn_apply = QPushButton()
+        self.btn_apply.setObjectName("Primary")
+        self.btn_apply.clicked.connect(self.apply_mod)
+        layout.addWidget(self.btn_apply)
+        self.btn_restore = QPushButton()
+        self.btn_restore.setObjectName("Secondary")
+        self.btn_restore.clicked.connect(self.restore)
+        layout.addWidget(self.btn_restore)
+        return side
+
+    def _go_page(self, index: int) -> None:
+        self.pages.setCurrentIndex(index)
+        (self.nav_class, self.nav_bag)[index].setChecked(True)
+
+    def _focus_search(self) -> None:
+        box = self.search if self.pages.currentIndex() == 0 else self.item_search
+        box.setFocus()
+        box.selectAll()
+
+    @staticmethod
+    def _page_header(layout: QVBoxLayout, toggle: QCheckBox) -> tuple[QLabel, QLabel]:
+        """Título e descrição da página, com a caixa que liga/desliga a seção à direita."""
+        row = QHBoxLayout()
+        texts = QVBoxLayout()
+        texts.setSpacing(0)
+        title = QLabel()
+        title.setObjectName("PageTitle")
+        desc = QLabel()
+        desc.setObjectName("PageDesc")
+        desc.setWordWrap(True)
+        texts.addWidget(title)
+        texts.addWidget(desc)
+        row.addLayout(texts, 1)
+        toggle.setObjectName("SectionToggle")
+        row.addWidget(toggle, 0, Qt.AlignVCenter)
+        layout.addLayout(row)
+        rule = QFrame()
+        rule.setObjectName("Rule")
+        rule.setFixedHeight(1)
+        layout.addWidget(rule)
+        return title, desc
 
     def _build_banner(self) -> QFrame:
         banner = QFrame()
@@ -225,8 +345,12 @@ class MainWindow(QMainWindow):
         self.banner_subtitle.setText(t("banner_subtitle"))
         self.lang_combo.setToolTip(t("lang_tip"))
         self._sync_lang_combo()
-        self.main_tabs.setTabText(0, t("tab_class"))
-        self.main_tabs.setTabText(1, t("tab_bag"))
+        self.lbl_nav_caption.setText(t("nav_caption"))
+        self.lbl_installed_caption.setText(t("installed_caption"))
+        self.lbl_class_title.setText(t("tab_class"))
+        self.lbl_class_desc.setText(t("page_class_desc"))
+        self.lbl_bag_title.setText(t("tab_bag"))
+        self.lbl_bag_desc.setText(t("page_bag_desc"))
         self.btn_apply.setText(t("btn_apply"))
         self.btn_restore.setText(t("btn_restore"))
         self.setup_group.setTitle(theme.ornament(t("setup_title")))
@@ -245,10 +369,8 @@ class MainWindow(QMainWindow):
         self.lbl_jp.setText(t("lbl_jp"))
         self.jp_spin.setToolTip(t("tip_jp"))
         self.search.setPlaceholderText(t("search_class"))
-        for index, key in enumerate(self.lists):
-            self.tabs.setTabText(index, class_catalog.category_labels()[key])
-        self.tabs.setTabText(self._custom_tab_index(), t("cat_custom"))
-        self.btn_cc_new.setText(t("cc_btn_new"))
+        self.btn_cc_new.setText(t("cc_btn_new_plus"))
+        self.btn_cc_new.setToolTip(t("cc_new_tip"))
         self.btn_cc_edit.setText(t("cc_btn_edit"))
         self.btn_cc_dup.setText(t("cc_btn_dup"))
         self.btn_cc_delete.setText(t("cc_btn_delete"))
@@ -257,13 +379,16 @@ class MainWindow(QMainWindow):
         self.chk_bag.setText(t("chk_bag"))
         self.bag_help.setText(t("bag_help"))
         self.item_search.setPlaceholderText(t("search_item"))
+        self.lbl_items_catalog.setText(t("lbl_items_catalog"))
         self.lbl_qty.setText(t("lbl_qty"))
         self.btn_add.setText(t("btn_add"))
-        self.lbl_my_list.setText(t("lbl_my_list"))
         self.bag_table.setHorizontalHeaderLabels([t("col_item"), t("col_type"), t("col_qty")])
         self.btn_remove.setText(t("btn_remove"))
+        self.btn_remove.setToolTip(t("tip_remove"))
         self.btn_clear.setText(t("btn_clear"))
         self.btn_deluxe.setText(t("btn_deluxe"))
+        self._update_bag_caption()
+        self._update_nav()
         if hasattr(self, "_setup_all_ok"):
             self._update_setup_visibility(None)
 
@@ -300,100 +425,141 @@ class MainWindow(QMainWindow):
         else:
             self.refresh_all()
 
-    def _build_class_tab(self) -> QWidget:
-        page = QWidget()
+    def _build_class_tab(self) -> QFrame:
+        page = QFrame()
+        page.setObjectName("Page")
         layout = QVBoxLayout(page)
-
-        top = QHBoxLayout()
+        layout.setContentsMargins(14, 10, 14, 12)
         self.chk_class = QCheckBox()
         self.chk_class.setChecked(self.settings.change_class)
         self.chk_class.toggled.connect(self._class_toggled)
-        top.addWidget(self.chk_class)
-        top.addStretch()
+        self.lbl_class_title, self.lbl_class_desc = self._page_header(layout, self.chk_class)
+
+        self.class_body = QWidget()
+        body = QVBoxLayout(self.class_body)
+        body.setContentsMargins(0, 4, 0, 0)
+        tools = QHBoxLayout()
+        self.search = QLineEdit()
+        self.search.setClearButtonEnabled(True)
+        self.search.textChanged.connect(self.fill_lists)
+        tools.addWidget(self.search, 1)
+        tools.addSpacing(12)
         self.lbl_jp = QLabel()
-        top.addWidget(self.lbl_jp)
+        tools.addWidget(self.lbl_jp)
         self.jp_spin = QSpinBox()
         self.jp_spin.setRange(0, 9999)
         self.jp_spin.setValue(self.settings.jp_cost)
         self.jp_spin.valueChanged.connect(self._jp_changed)
-        top.addWidget(self.jp_spin)
-        layout.addLayout(top)
+        tools.addWidget(self.jp_spin)
+        tools.addSpacing(12)
+        self.btn_cc_new = QPushButton()
+        self.btn_cc_new.setObjectName("Accent")
+        self.btn_cc_new.clicked.connect(self.new_custom)
+        tools.addWidget(self.btn_cc_new)
+        self.btn_cc_import = QPushButton()
+        self.btn_cc_import.clicked.connect(self.import_custom)
+        tools.addWidget(self.btn_cc_import)
+        body.addLayout(tools)
 
-        self.class_body = QSplitter(Qt.Horizontal)
-        left = QWidget()
-        left_layout = QVBoxLayout(left)
-        left_layout.setContentsMargins(0, 0, 0, 0)
-        self.search = QLineEdit()
-        self.search.setPlaceholderText("")
-        self.search.textChanged.connect(self.fill_lists)
-        left_layout.addWidget(self.search)
-        self.tabs = QTabWidget()
-        self.tabs.setObjectName("SubTabs")
-        self.lists: dict[str, QListWidget] = {}
-        for key, label in class_catalog.category_labels().items():
-            lst = QListWidget()
-            lst.currentItemChanged.connect(self.show_preview)
-            self.lists[key] = lst
-            self.tabs.addTab(lst, label)
-        self.tabs.addTab(self._build_custom_page(), "")
-        self.tabs.currentChanged.connect(lambda _i: self.show_preview())
-        left_layout.addWidget(self.tabs)
-        self.class_body.addWidget(left)
-        self.preview = QTextBrowser()
-        self.class_body.addWidget(self.preview)
-        self.class_body.setSizes([420, 730])
+        chips = QHBoxLayout()
+        chips.setSpacing(6)
+        self.class_filter = FILTER_ALL
+        self.chip_group = QButtonGroup(self)
+        self.chips: dict[str, QPushButton] = {}
+        for key in (FILTER_ALL, FILTER_CUSTOM, *class_catalog.category_labels()):
+            chip = QPushButton()
+            chip.setObjectName("Chip")
+            chip.setCheckable(True)
+            chip.setCursor(Qt.PointingHandCursor)
+            chip.clicked.connect(lambda _c=False, k=key: self._set_filter(k))
+            self.chip_group.addButton(chip)
+            self.chips[key] = chip
+            chips.addWidget(chip)
+        self.chips[FILTER_ALL].setChecked(True)
+        chips.addStretch()
+        body.addLayout(chips)
+
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.setHandleWidth(10)
+        # A classe escolhida fica guardada aqui, mesmo quando a busca ou o filtro a esconde da lista.
+        self._chosen_entry: Optional[tuple] = None
+        self.class_list = QListWidget()
+        self.class_list.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.class_list.setTextElideMode(Qt.ElideRight)
+        self.class_list.currentItemChanged.connect(self._class_selected)
+        self.class_list.itemDoubleClicked.connect(self._class_double_clicked)
+        splitter.addWidget(self.class_list)
+        splitter.addWidget(self._build_preview_panel())
+        splitter.setSizes([430, 530])
+        body.addWidget(splitter, 1)
         self.class_body.setEnabled(self.settings.change_class)
         layout.addWidget(self.class_body, 1)
         return page
 
-    def _build_custom_page(self) -> QWidget:
-        """Sub-aba 'Minhas classes': biblioteca de classes customizadas."""
-        page = QWidget()
-        layout = QVBoxLayout(page)
+    def _build_preview_panel(self) -> QWidget:
+        """Prévia da classe, com as ações da classe customizada selecionada logo acima."""
+        panel = QWidget()
+        layout = QVBoxLayout(panel)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.custom_list = QListWidget()
-        self.custom_list.currentItemChanged.connect(self.show_preview)
-        self.custom_list.itemDoubleClicked.connect(lambda _i: self.edit_custom())
-        layout.addWidget(self.custom_list, 1)
-        grid = QGridLayout()
-        self.btn_cc_new = QPushButton()
-        self.btn_cc_new.clicked.connect(self.new_custom)
+        layout.setSpacing(4)
+        self.class_actions = QFrame()
+        self.class_actions.setObjectName("ActionBar")
+        outer = QVBoxLayout(self.class_actions)
+        outer.setContentsMargins(6, 5, 6, 5)
+        outer.setSpacing(3)
+        bar = QHBoxLayout()
+        outer.addLayout(bar)
+        self.lbl_cc_note = QLabel()
+        self.lbl_cc_note.setObjectName("Muted")
+        self.lbl_cc_note.setWordWrap(True)
+        outer.addWidget(self.lbl_cc_note)
         self.btn_cc_edit = QPushButton()
         self.btn_cc_edit.clicked.connect(self.edit_custom)
         self.btn_cc_dup = QPushButton()
         self.btn_cc_dup.clicked.connect(self.duplicate_custom)
-        self.btn_cc_delete = QPushButton()
-        self.btn_cc_delete.clicked.connect(self.delete_custom)
-        self.btn_cc_import = QPushButton()
-        self.btn_cc_import.clicked.connect(self.import_custom)
         self.btn_cc_export = QPushButton()
         self.btn_cc_export.clicked.connect(self.export_custom)
-        buttons = [self.btn_cc_new, self.btn_cc_edit, self.btn_cc_dup,
-                   self.btn_cc_import, self.btn_cc_export, self.btn_cc_delete]
-        for index, btn in enumerate(buttons):
-            grid.addWidget(btn, index // 3, index % 3)
-        layout.addLayout(grid)
-        return page
+        self.btn_cc_delete = QPushButton()
+        self.btn_cc_delete.setObjectName("Danger")
+        self.btn_cc_delete.clicked.connect(self.delete_custom)
+        for btn in (self.btn_cc_edit, self.btn_cc_dup, self.btn_cc_export):
+            bar.addWidget(btn)
+        bar.addStretch()
+        bar.addWidget(self.btn_cc_delete)
+        self.class_actions.hide()
+        layout.addWidget(self.class_actions)
+        self.preview = QTextBrowser()
+        layout.addWidget(self.preview, 1)
+        return panel
 
-    def _build_bag_tab(self) -> QWidget:
-        page = QWidget()
+    def _build_bag_tab(self) -> QFrame:
+        page = QFrame()
+        page.setObjectName("Page")
         layout = QVBoxLayout(page)
+        layout.setContentsMargins(14, 10, 14, 12)
         self.chk_bag = QCheckBox()
         self.chk_bag.setChecked(self.settings.change_bag)
         self.chk_bag.toggled.connect(self._bag_toggled)
-        layout.addWidget(self.chk_bag)
+        self.lbl_bag_title, self.lbl_bag_desc = self._page_header(layout, self.chk_bag)
+
+        self.bag_body = QWidget()
+        body = QVBoxLayout(self.bag_body)
+        body.setContentsMargins(0, 4, 0, 0)
         self.bag_help = QLabel()
+        self.bag_help.setObjectName("Note")
         self.bag_help.setWordWrap(True)
         self.bag_help.setTextFormat(Qt.RichText)
-        layout.addWidget(self.bag_help)
+        body.addWidget(self.bag_help)
 
-        self.bag_body = QSplitter(Qt.Horizontal)
-
+        splitter = QSplitter(Qt.Horizontal)
         left = QWidget()
         left_layout = QVBoxLayout(left)
         left_layout.setContentsMargins(0, 0, 0, 0)
+        self.lbl_items_catalog = QLabel()
+        self.lbl_items_catalog.setObjectName("ColumnTitle")
+        left_layout.addWidget(self.lbl_items_catalog)
         self.item_search = QLineEdit()
-        self.item_search.setPlaceholderText("")
+        self.item_search.setClearButtonEnabled(True)
         self.item_search.textChanged.connect(self.fill_item_list)
         left_layout.addWidget(self.item_search)
         self.item_list = QListWidget()
@@ -405,17 +571,19 @@ class MainWindow(QMainWindow):
         self.qty_spin = QSpinBox()
         self.qty_spin.setRange(1, MAX_QUANTITY)
         add_row.addWidget(self.qty_spin)
+        add_row.addStretch()
         self.btn_add = QPushButton()
+        self.btn_add.setObjectName("Accent")
         self.btn_add.clicked.connect(self.add_bag_item)
         add_row.addWidget(self.btn_add)
-        add_row.addStretch()
         left_layout.addLayout(add_row)
-        self.bag_body.addWidget(left)
+        splitter.addWidget(left)
 
         right = QWidget()
         right_layout = QVBoxLayout(right)
         right_layout.setContentsMargins(0, 0, 0, 0)
         self.lbl_my_list = QLabel()
+        self.lbl_my_list.setObjectName("ColumnTitle")
         right_layout.addWidget(self.lbl_my_list)
         self.bag_table = QTableWidget(0, 3)
         self.bag_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.Stretch)
@@ -428,15 +596,19 @@ class MainWindow(QMainWindow):
         self.btn_remove = QPushButton()
         self.btn_remove.clicked.connect(self.remove_bag_item)
         self.btn_clear = QPushButton()
+        self.btn_clear.setObjectName("Danger")
         self.btn_clear.clicked.connect(self.clear_bag)
         self.btn_deluxe = QPushButton()
         self.btn_deluxe.clicked.connect(self.reset_bag_to_deluxe)
-        for btn in (self.btn_remove, self.btn_clear, self.btn_deluxe):
-            buttons.addWidget(btn)
+        buttons.addWidget(self.btn_remove)
         buttons.addStretch()
+        buttons.addWidget(self.btn_deluxe)
+        buttons.addWidget(self.btn_clear)
         right_layout.addLayout(buttons)
-        self.bag_body.addWidget(right)
-        self.bag_body.setSizes([520, 630])
+        splitter.addWidget(right)
+        splitter.setHandleWidth(14)
+        splitter.setSizes([460, 500])
+        body.addWidget(splitter, 1)
         self.bag_body.setEnabled(self.settings.change_bag)
         layout.addWidget(self.bag_body, 1)
         return page
@@ -458,11 +630,34 @@ class MainWindow(QMainWindow):
         self.settings.change_class = checked
         self.settings.save()
         self.class_body.setEnabled(checked)
+        self._update_nav()
 
     def _bag_toggled(self, checked: bool) -> None:
         self.settings.change_bag = checked
         self.settings.save()
         self.bag_body.setEnabled(checked)
+        self._update_nav()
+
+    def _update_nav(self) -> None:
+        """Resumo de cada passo na barra lateral: o que será aplicado ao clicar em 'Aplicar no jogo'."""
+        if not hasattr(self, "class_list"):
+            return
+        t = i18n.t
+        if not self.chk_class.isChecked():
+            class_text, class_on = t("nav_off"), False
+        else:
+            entry = self._current_entry()
+            if entry is None:
+                class_text, class_on = t("nav_pick_class"), False
+            else:
+                kind, payload = entry
+                class_text, class_on = (payload[1].name if kind == ENTRY_CUSTOM else payload.name), True
+        self.nav_class.set_texts(t("tab_class"), class_text, class_on)
+        if not self.chk_bag.isChecked():
+            bag_text, bag_on = t("nav_off"), False
+        else:
+            bag_text, bag_on = t("nav_bag_n", n=len(self.bag)), bool(self.bag)
+        self.nav_bag.set_texts(t("tab_bag"), bag_text, bag_on)
 
     def game_root(self) -> Optional[Path]:
         p = Path(self.settings.game_root) if self.settings.game_root else None
@@ -558,27 +753,9 @@ class MainWindow(QMainWindow):
         command = self.tables.command_for(option.job)
         return len(command.all_ability_ids) if command else 0
 
-    def fill_lists(self) -> None:
-        needle = self.search.text().strip().lower()
-        for key, lst in self.lists.items():
-            lst.clear()
-            for option in self.catalog:
-                if option.category != key:
-                    continue
-                label = option.label(self._ability_count(option))
-                if needle and needle not in label.lower():
-                    continue
-                item = QListWidgetItem(label)
-                item.setData(Qt.UserRole, option)
-                item.setToolTip(i18n.t("tip_job", job=option.job_id, cmd=option.job.job_command_id))
-                lst.addItem(item)
-        self.fill_custom_list()
-
-    def fill_custom_list(self, select: Optional[Path] = None) -> None:
-        needle = self.search.text().strip().lower()
-        current = select or self._selected_custom_path()
-        self.custom_list.blockSignals(True)
-        self.custom_list.clear()
+    def _class_groups(self) -> list[tuple[str, str, list[tuple[str, tuple, str]]]]:
+        """(filtro, título, [(texto, entrada, dica)]) de cada seção da lista, na ordem em que aparecem."""
+        custom = []
         entries = [(p, k, True) for p, k in custom_class.list_library(paths.presets_dir())]
         entries += [(p, k, False) for p, k in custom_class.list_library(paths.classes_dir())]
         for path, klass, builtin in entries:
@@ -586,16 +763,81 @@ class MainWindow(QMainWindow):
                            base=self.job_display_name(klass.base_job), n=len(klass.ability_ids))
             if builtin:
                 label = f"★ {label}"
-            if needle and needle not in label.lower():
+            tip = i18n.t("cc_builtin_tip") if builtin else str(path)
+            custom.append((label, (ENTRY_CUSTOM, (path, klass)), tip))
+        groups = [(FILTER_CUSTOM, i18n.t("cat_custom"), custom)]
+        for key, title in class_catalog.category_labels().items():
+            rows = [(option.label(self._ability_count(option)), (ENTRY_CATALOG, option),
+                     i18n.t("tip_job", job=option.job_id, cmd=option.job.job_command_id))
+                    for option in self.catalog if option.category == key]
+            groups.append((key, title, rows))
+        return groups
+
+    @staticmethod
+    def _entry_key(entry: Optional[tuple]) -> Optional[tuple]:
+        if entry is None:
+            return None
+        kind, payload = entry
+        return (kind, payload[0]) if kind == ENTRY_CUSTOM else (kind, payload.job_id)
+
+    def fill_lists(self, *_args, select: Optional[tuple] = None) -> None:
+        """Lista única de classes; os chips filtram por seção e mostram quantas batem com a busca."""
+        needle = self.search.text().strip().lower()
+        target = select or self._entry_key(self._chosen_entry)
+        groups = self._class_groups()
+        # Reaponta para a entrada recarregada (ex.: classe editada) ou esquece se ela sumiu (excluída).
+        self._chosen_entry = next((entry for _k, _t, rows in groups for _l, entry, _tip in rows
+                                   if target and self._entry_key(entry) == target), None)
+        counts: dict[str, int] = {}
+        self.class_list.blockSignals(True)
+        self.class_list.clear()
+        for key, title, rows in groups:
+            rows = [row for row in rows if not needle or needle in row[0].lower()]
+            counts[key] = len(rows)
+            if self.class_filter not in (FILTER_ALL, key) or not rows:
                 continue
-            item = QListWidgetItem(label)
-            item.setData(Qt.UserRole, (path, klass))
-            item.setToolTip(i18n.t("cc_builtin_tip") if builtin else str(path))
-            self.custom_list.addItem(item)
-            if current and path == current:
-                self.custom_list.setCurrentItem(item)
-        self.custom_list.blockSignals(False)
+            if self.class_filter == FILTER_ALL:
+                self.class_list.addItem(self._section_item(f"{title}  ·  {len(rows)}"))
+            for label, entry, tip in rows:
+                item = QListWidgetItem(label)
+                item.setData(Qt.UserRole, entry)
+                item.setToolTip(tip)
+                self.class_list.addItem(item)
+                if target and self._entry_key(entry) == target:
+                    self.class_list.setCurrentItem(item)
+        if self.class_list.count() == 0:
+            self.class_list.addItem(self._section_item(i18n.t("list_no_match"), header=False))
+        self.class_list.blockSignals(False)
+        counts[FILTER_ALL] = sum(counts.values())
+        labels = {FILTER_ALL: i18n.t("filter_all"), FILTER_CUSTOM: i18n.t("cat_custom"),
+                  **class_catalog.category_labels()}
+        for key, chip in self.chips.items():
+            chip.setText(f"{labels[key]}  {counts.get(key, 0)}")
         self.show_preview()
+
+    @staticmethod
+    def _section_item(text: str, header: bool = True) -> QListWidgetItem:
+        """Linha não selecionável: título de seção (no filtro 'Todas') ou aviso de lista vazia."""
+        item = QListWidgetItem(text.upper() if header else text)
+        item.setFlags(Qt.NoItemFlags)
+        font = item.font()
+        font.setBold(header)
+        font.setItalic(not header)
+        item.setFont(font)
+        item.setForeground(QColor(theme.CRIMSON if header else theme.INK_MUTED))
+        if header:
+            item.setBackground(QColor(theme.PARCHMENT_DARK))
+        return item
+
+    def _set_filter(self, key: str) -> None:
+        self.class_filter = key
+        self.chips[key].setChecked(True)
+        self.fill_lists()
+
+    def _class_double_clicked(self, item: QListWidgetItem) -> None:
+        entry = item.data(Qt.UserRole)
+        if entry and entry[0] == ENTRY_CUSTOM:
+            self.edit_custom()
 
     @staticmethod
     def is_builtin(path: Path) -> bool:
@@ -606,21 +848,18 @@ class MainWindow(QMainWindow):
         saved = Path(self.settings.custom_class_file)
         return saved if saved.is_absolute() else paths.classes_dir() / saved
 
-    def _custom_tab_index(self) -> int:
-        return len(self.lists)
+    def _current_entry(self) -> Optional[tuple]:
+        return self._chosen_entry
 
-    def on_custom_tab(self) -> bool:
-        return self.tabs.currentIndex() == self._custom_tab_index()
-
-    def _selected_custom_path(self) -> Optional[Path]:
-        item = self.custom_list.currentItem()
-        return item.data(Qt.UserRole)[0] if item else None
+    def _class_selected(self, item: Optional[QListWidgetItem], _previous=None) -> None:
+        entry = item.data(Qt.UserRole) if item else None
+        if entry:
+            self._chosen_entry = entry
+        self.show_preview()
 
     def selected_custom(self) -> Optional[tuple[Path, CustomClass]]:
-        if not self.on_custom_tab():
-            return None
-        item = self.custom_list.currentItem()
-        return item.data(Qt.UserRole) if item else None
+        entry = self._current_entry()
+        return entry[1] if entry and entry[0] == ENTRY_CUSTOM else None
 
     def job_display_name(self, job_id: int) -> str:
         for option in self.catalog:
@@ -634,41 +873,47 @@ class MainWindow(QMainWindow):
         return (self.command_names.get(cmd_id) or "").strip() or (command.name if command else "") or f"#{cmd_id}"
 
     def _select_saved_class(self) -> None:
-        if self.settings.custom_class_file:
-            target = self._saved_custom_path()
-            for row in range(self.custom_list.count()):
-                if self.custom_list.item(row).data(Qt.UserRole)[0] == target:
-                    self.tabs.setCurrentIndex(self._custom_tab_index())
-                    self.custom_list.setCurrentRow(row)
-                    return
-        job_id = self.settings.class_job_id
-        if job_id is None:
+        """Na abertura, volta para a última classe aplicada (sem desfazer uma escolha já feita)."""
+        if self._chosen_entry is not None:
             return
-        for tab_index, lst in enumerate(self.lists.values()):
-            for row in range(lst.count()):
-                if lst.item(row).data(Qt.UserRole).job_id == job_id:
-                    self.tabs.setCurrentIndex(tab_index)
-                    lst.setCurrentRow(row)
-                    return
+        if self.settings.custom_class_file:
+            target = (ENTRY_CUSTOM, self._saved_custom_path())
+        elif self.settings.class_job_id is not None:
+            target = (ENTRY_CATALOG, self.settings.class_job_id)
+        else:
+            return
+        for row in range(self.class_list.count()):
+            item = self.class_list.item(row)
+            if self._entry_key(item.data(Qt.UserRole)) == target:
+                self.class_list.setCurrentItem(item)
+                self.class_list.scrollToItem(item, QAbstractItemView.PositionAtCenter)
+                return
 
     def selected_option(self) -> Optional[ClassOption]:
-        if self.on_custom_tab():
-            return None
-        key = list(self.lists)[self.tabs.currentIndex()]
-        item = self.lists[key].currentItem()
-        return item.data(Qt.UserRole) if item else None
+        entry = self._current_entry()
+        return entry[1] if entry and entry[0] == ENTRY_CATALOG else None
+
+    def _update_class_actions(self) -> None:
+        selected = self.selected_custom()
+        self.class_actions.setVisible(selected is not None)
+        if selected is None:
+            return
+        builtin = self.is_builtin(selected[0])
+        self.lbl_cc_note.setText(i18n.t("cc_builtin_note") if builtin else i18n.t("cc_user_note"))
+        self.btn_cc_delete.setEnabled(not builtin)
+        self.btn_cc_delete.setToolTip(i18n.t("cc_builtin_no_delete") if builtin else "")
 
     def show_preview(self, *_args) -> None:
-        if self.on_custom_tab():
-            selected = self.selected_custom()
-            if selected is None:
-                self.preview.setHtml(self._page(i18n.t("cc_preview_empty")))
-            else:
-                self._show_custom_preview(selected[1])
+        self._update_class_actions()
+        self._update_nav()
+        selected = self.selected_custom()
+        if selected is not None:
+            self._show_custom_preview(selected[1])
             return
         option = self.selected_option()
         if option is None:
-            self.preview.setHtml(self._page(i18n.t("preview_empty")))
+            empty = "cc_preview_empty" if self.class_filter == FILTER_CUSTOM else "preview_empty"
+            self.preview.setHtml(self._page(i18n.t(empty)))
             return
         job = option.job
         command = self.tables.command_for(job)
@@ -770,8 +1015,13 @@ class MainWindow(QMainWindow):
         return dlg.result_class()
 
     def _after_library_change(self, path: Optional[Path]) -> None:
-        self.tabs.setCurrentIndex(self._custom_tab_index())
-        self.fill_custom_list(select=path)
+        if self.class_filter not in (FILTER_ALL, FILTER_CUSTOM):
+            self.class_filter = FILTER_CUSTOM
+            self.chips[FILTER_CUSTOM].setChecked(True)
+        self.fill_lists(select=(ENTRY_CUSTOM, path) if path else None)
+        item = self.class_list.currentItem()
+        if item:
+            self.class_list.scrollToItem(item)
 
     def new_custom(self) -> None:
         klass = self._editor(None)
@@ -883,6 +1133,13 @@ class MainWindow(QMainWindow):
             spin.setValue(entry.quantity)
             spin.valueChanged.connect(lambda value, r=row: self._set_quantity(r, value))
             self.bag_table.setCellWidget(row, 2, spin)
+        self._update_bag_caption()
+        self._update_nav()
+
+    def _update_bag_caption(self) -> None:
+        self.lbl_my_list.setText(i18n.t("lbl_my_list_n", n=len(self.bag)))
+        self.btn_remove.setEnabled(bool(self.bag))
+        self.btn_clear.setEnabled(bool(self.bag))
 
     def _save_bag(self) -> None:
         self.settings.bag_items = [[b.item_id, b.quantity] for b in self.bag]
