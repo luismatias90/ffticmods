@@ -77,6 +77,8 @@ class BuildPlan:
     bag: Optional[list[BagItem]] = None  # None = não mexe no pacote de bônus
     custom: Optional[CustomClass] = None  # classe customizada (skillset nos 25-27)
     command_xml: Optional[str] = None
+    sprite_stem: Optional[str] = None  # folha fftpack que substitui as três do Ramza
+    sprite_name: Optional[str] = None
 
     @property
     def ramza_command_ids(self) -> list[int]:
@@ -85,7 +87,7 @@ class BuildPlan:
 
     @property
     def is_empty(self) -> bool:
-        return self.source_job is None and not self.bag
+        return self.source_job is None and not self.bag and not self.sprite_stem
 
 
 # ---------------------------------------------------------------------------
@@ -183,6 +185,8 @@ def plan_build(
     class_name: Optional[str],
     bag: Optional[list[BagItem]] = None,
     custom: Optional[CustomClass] = None,
+    sprite_stem: Optional[str] = None,
+    sprite_name: Optional[str] = None,
 ) -> BuildPlan:
     """
     Calcula tudo que vai no mod (função pura, sem tocar em disco). Com
@@ -193,7 +197,8 @@ def plan_build(
     if custom is not None:
         source_job_id, class_name = custom.base_job, custom.name
     if source_job_id is None:
-        return BuildPlan(None, None, None, None, None, [], {}, bag)
+        return BuildPlan(None, None, None, None, None, [], {}, bag,
+                         sprite_stem=sprite_stem, sprite_name=sprite_name)
     if source_job_id in RAMZA_JOB_IDS:
         raise ValueError("Escolha uma classe diferente das classes originais do Ramza.")
     source = tables.jobs[source_job_id]
@@ -226,7 +231,7 @@ def plan_build(
         spawn_xml = _table_xml("SpawnTable", "Spawn", [entry], note)
 
     return BuildPlan(source, class_name, job_xml, ability_xml, spawn_xml, ability_ids, changes, bag,
-                     custom, command_xml)
+                     custom, command_xml, sprite_stem, sprite_name)
 
 
 # ---------------------------------------------------------------------------
@@ -242,11 +247,15 @@ def mod_config(plan: BuildPlan) -> dict:
         parts.append(f"Ramza joga como {plan.class_name} (Job {plan.source_job.id}), todas as skills da classe liberadas.")
     if plan.bag:
         parts.append(f"Bônus da Deluxe Edition trocado por {len(plan.bag)} item(ns) escolhido(s).")
+    if plan.sprite_name:
+        parts.append(f"Sprite de batalha do Ramza trocado por {plan.sprite_name}.")
     plugin = {
         "ClassName": plan.class_name,
         "SourceJobId": plan.source_job.id if plan.source_job else None,
         "BagItems": [[b.item_id, b.quantity] for b in plan.bag] if plan.bag else [],
         "CustomClass": plan.custom.to_dict() if plan.custom else None,
+        "SpriteStem": plan.sprite_stem,
+        "SpriteName": plan.sprite_name,
     }
     return {
         "ModId": MOD_ID,
@@ -271,6 +280,16 @@ def mod_config(plan: BuildPlan) -> dict:
         "SupportedAppId": ["fft_enhanced.exe"],
         "ProjectUrl": "",
     }
+
+
+def write_ramza_sprite(mod_root: Path, sprite_bytes: bytes) -> None:
+    """Grava a mesma folha nos três sprites de batalha do Ramza."""
+    from .sprites import RAMZA_SPRITE_FILES
+
+    for relative in RAMZA_SPRITE_FILES:
+        dest = mod_root / "FFTIVC" / "data" / GAME_MODE / relative
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(sprite_bytes)
 
 
 def write_mod_folder(plan: BuildPlan, mod_root: Path, nxd_files: list[Path]) -> None:
@@ -331,6 +350,7 @@ def build_mod(
     plan: BuildPlan,
     staging_root: Path,
     nxd_builder: Optional[Callable[[BuildPlan, Path], list[Path]]] = None,
+    sprite_bytes: Optional[bytes] = None,
 ) -> Path:
     """Monta o mod completo em `staging_root/<ModId>` e devolve esse caminho."""
     shutil.rmtree(staging_root, ignore_errors=True)
@@ -338,4 +358,6 @@ def build_mod(
     mod_root.mkdir(parents=True)
     nxd_files = nxd_builder(plan, staging_root / "_nxd_work") if nxd_builder else []
     write_mod_folder(plan, mod_root, nxd_files)
+    if sprite_bytes and plan.sprite_stem:
+        write_ramza_sprite(mod_root, sprite_bytes)
     return mod_root

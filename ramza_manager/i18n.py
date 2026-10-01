@@ -14,6 +14,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "banner_subtitle": "Final Fantasy Tactics · The Ivalice Chronicles — gerenciador de runs solo do Ramza",
         "lang_tip": "Idioma do aplicativo e do assistente",
         "tab_class": "Classe do Ramza",
+        "tab_sprite": "Sprite do Ramza",
         "tab_bag": "Itens iniciais (bolsa)",
         "btn_apply": "Aplicar no jogo",
         "btn_restore": "Restaurar jogo original",
@@ -64,7 +65,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "mod_original_class": "original (Squire)",
         "mod_bag_count": "{n} item(ns) no bônus",
         "mod_bag_original": "bônus original",
-        "mod_active": "Ramza: <b>{klass}</b><br>Bolsa: <b>{bag}</b>",
+        "mod_sprite_original": "original",
+        "mod_active": "Ramza: <b>{klass}</b><br>Sprite: <b>{sprite}</b><br>Bolsa: <b>{bag}</b>",
         "preview_empty": (
             "<h2>Escolha uma classe</h2>"
             "<p>Selecione uma classe na lista para ver skills, equipamentos e atributos.</p>"
@@ -124,9 +126,31 @@ STRINGS: dict[str, dict[str, str]] = {
         "empty_bag_body": "Adicione itens na aba 'Itens iniciais', ou desmarque a troca do bônus.",
         "nothing_title": "Nada para aplicar",
         "nothing_body": (
-            "Marque a troca de classe e/ou a troca dos itens. Para voltar ao jogo original, "
+            "Marque a troca de classe, de sprite e/ou dos itens. Para voltar ao jogo original, "
             "use 'Restaurar jogo original'."
         ),
+        "pick_sprite_title": "Escolha um sprite",
+        "pick_sprite_body": "Selecione um sprite na aba 'Sprite do Ramza', ou desmarque a troca de sprite.",
+        "done_sprite": "• O sprite de batalha do Ramza agora é {name}.",
+        "log_sprite": "Lendo o sprite {name} do jogo...",
+        "sprite_no_pack": "Não encontrei data/enhanced/0002.pac. Aponte a pasta do jogo.",
+        "sprite_extract_fail": "Não consegui ler o sprite {name} (código {code}).",
+        "chk_sprite": "Trocar o sprite de batalha do Ramza",
+        "page_sprite_desc": (
+            "O Ramza passa a ser desenhado com o sprite escolhido nos capítulos 1, 2–3 e 4. "
+            "O retrato do menu e algumas cenas de evento podem continuar com o visual original."
+        ),
+        "sprite_help": (
+            "<b>Como funciona:</b> a classe não muda o desenho do Ramza. Esta opção copia a folha "
+            "de sprite de outro personagem por cima das três folhas dele. Só entram sprites humanos: "
+            "monstro usa outra animação e pode travar. Algumas cenas da história continuam com o Ramza original."
+        ),
+        "search_sprite": "Buscar sprite...",
+        "sprite_cat_all": "Todos",
+        "sprite_cat_unique": "Personagens",
+        "sprite_cat_generic": "Classes e genéricos",
+        "sprite_no_match": "Nenhum sprite encontrado.",
+        "nav_pick_sprite": "Escolha um sprite",
         "experimental_title": "Classe experimental",
         "experimental_body": "{name} é uma classe de chefe/inimigo e pode travar o jogo.\nAplicar mesmo assim?",
         "log_building": "Gerando mod...",
@@ -257,6 +281,8 @@ STRINGS: dict[str, dict[str, str]] = {
             "skills (custo de JP antes → depois), equipamentos e atributos. "
             "As três classes próprias do Ramza passam a ser essa. Ele continua no nível 1.</li>"
             "<li>O custo de JP padrão é <b>0</b>. Se o jogo não deixar aprender, mude para <b>1</b> e aplique de novo.</li>"
+            "<li>Opcional, na aba <b>Sprite do Ramza</b>: escolha outro sprite de batalha. "
+            "O retrato e algumas cenas podem continuar com o Ramza.</li>"
             "<li>Opcional, na aba <b>Itens iniciais</b>: monte a bolsa. Só vale na "
             "<b>Deluxe Edition</b> e em <b>jogo novo</b>. Teste primeiro com poucos itens.</li>"
             "<li>Clique em <b>Aplicar no jogo</b>. Abra o jogo <b>pelo Reloaded-II</b>.</li>"
@@ -395,6 +421,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "banner_subtitle": "Final Fantasy Tactics · The Ivalice Chronicles — solo Ramza run manager",
         "lang_tip": "Language of the app and the wizard",
         "tab_class": "Ramza's class",
+        "tab_sprite": "Ramza's sprite",
         "tab_bag": "Starting items (bag)",
         "btn_apply": "Apply to the game",
         "btn_restore": "Restore the original game",
@@ -445,7 +472,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "mod_original_class": "original (Squire)",
         "mod_bag_count": "{n} item(s) in the bonus",
         "mod_bag_original": "original bonus",
-        "mod_active": "Ramza: <b>{klass}</b><br>Bag: <b>{bag}</b>",
+        "mod_sprite_original": "original",
+        "mod_active": "Ramza: <b>{klass}</b><br>Sprite: <b>{sprite}</b><br>Bag: <b>{bag}</b>",
         "preview_empty": (
             "<h2>Choose a class</h2>"
             "<p>Select a class in the list to see skills, equipment and stats.</p>"
@@ -503,9 +531,32 @@ STRINGS: dict[str, dict[str, str]] = {
         "empty_bag_body": "Add items on the 'Starting items' tab, or uncheck the bonus swap.",
         "nothing_title": "Nothing to apply",
         "nothing_body": (
-            "Check the class change and/or the item swap. To go back to the original game, "
+            "Check the class change, the sprite change, and/or the item swap. To go back to the original game, "
             "use 'Restore the original game'."
         ),
+        "pick_sprite_title": "Pick a sprite",
+        "pick_sprite_body": "Select a sprite on the 'Ramza's sprite' tab, or uncheck the sprite change.",
+        "done_sprite": "• Ramza's battle sprite is now {name}.",
+        "log_sprite": "Reading the {name} sprite from the game...",
+        "sprite_no_pack": "data/enhanced/0002.pac was not found. Point to the game folder.",
+        "sprite_extract_fail": "Could not read the {name} sprite (code {code}).",
+        "chk_sprite": "Change Ramza's battle sprite",
+        "page_sprite_desc": (
+            "Ramza is drawn with the chosen sprite in chapters 1, 2–3 and 4. "
+            "The menu portrait and some event scenes can still show the original Ramza."
+        ),
+        "sprite_help": (
+            "<b>How it works:</b> changing his class does not change how Ramza is drawn. "
+            "This copies another character's sprite sheet over his three sheets. Only human "
+            "sprites are listed: a monster sheet uses different animations and can freeze the game. "
+            "Some story scenes still show the original Ramza."
+        ),
+        "search_sprite": "Search sprites...",
+        "sprite_cat_all": "All",
+        "sprite_cat_unique": "Characters",
+        "sprite_cat_generic": "Jobs and generics",
+        "sprite_no_match": "No sprite found.",
+        "nav_pick_sprite": "Pick a sprite",
         "experimental_title": "Experimental class",
         "experimental_body": "{name} is a boss/enemy class and may freeze the game.\nApply anyway?",
         "log_building": "Building mod...",
@@ -636,6 +687,8 @@ STRINGS: dict[str, dict[str, str]] = {
             "skills (JP cost before → after), equipment and stats. "
             "Ramza's three own classes become that class. He still starts at level 1.</li>"
             "<li>The default JP cost is <b>0</b>. If the game won't let you learn, set it to <b>1</b> and apply again.</li>"
+            "<li>Optional, on the <b>Ramza's sprite</b> tab: pick another battle sprite. "
+            "The portrait and some scenes can still show Ramza.</li>"
             "<li>Optional, on the <b>Starting items</b> tab: build the bag. This only works with the "
             "<b>Deluxe Edition</b> and a <b>new game</b>. Try a short list first.</li>"
             "<li>Click <b>Apply to the game</b>. Launch the game <b>from Reloaded-II</b>.</li>"

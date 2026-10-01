@@ -10,6 +10,7 @@ Troca a classe do Ramza em **FINAL FANTASY TACTICS - The Ivalice Chronicles (ver
 - As três classes próprias do Ramza (Squire do Cap. 1, Squire dos Cap. 2–3 e Gallant Knight do Cap. 4) viram a classe escolhida, com skillset, equipamentos, multiplicadores e crescimento de atributos, Move/Jump, evasão, habilidades inatas e nome no menu.
 - As skills do skillset (ação, reação, suporte e movimento) custam 0 JP. Você aprende tudo no menu *Learn* logo no começo.
 - Se a classe não puder usar o equipamento inicial do Ramza, ele troca por um item básico compatível (ex.: Broadsword → Rod para Black Mage).
+- Opcional: o sprite de batalha do Ramza (capítulos 1, 2–3 e 4) vira o de outro personagem humano ou de uma classe genérica. O retrato do menu e algumas cenas de evento podem continuar com o Ramza original.
 
 **Não muda:**
 - Nível, EXP e atributos base: o Ramza começa no nível 1 e evolui normalmente.
@@ -35,8 +36,9 @@ Na primeira abertura, um assistente pergunta se a interface fica em **português
 2. Confira o painel **Configuração**. O jogo e o Reloaded-II são detectados sozinhos; se não forem, use *Procurar...*
 3. Clique em **Extrair / atualizar** (leva uns 10 segundos, só lê o jogo). Repita depois de updates do jogo.
 4. Escolha uma classe nas abas **Genéricas**, **Personagens únicos** ou **Chefes / Inimigos ⚠**. O painel da direita mostra as skills (com o custo de JP antes → depois), equipamentos e atributos.
-5. Clique em **Aplicar no Ramza**. O mod é instalado e ativado no perfil do `FFT_enhanced.exe`.
-6. Abra o jogo **pelo Reloaded-II**.
+5. Opcional: na aba **Sprite do Ramza**, escolha outro sprite de batalha.
+6. Clique em **Aplicar no jogo**. O mod é instalado e ativado no perfil do `FFT_enhanced.exe`.
+7. Abra o jogo **pelo Reloaded-II**.
 
 Para trocar de classe, é só escolher outra e aplicar de novo. **Restaurar jogo original** remove o mod.
 

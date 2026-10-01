@@ -20,9 +20,10 @@ from PySide6.QtWidgets import (
 
 from . import (
     __version__, class_catalog, custom_class, game_install, i18n, mod_builder, nxd_db, paths, prereqs, reloaded,
-    theme,
+    sprites, theme,
 )
 from .class_catalog import ClassOption
+from .sprites import SpriteOption
 from .class_editor import CustomClassDialog
 from .custom_class import CustomClass, CustomClassError
 from .nxd_db import MAX_QUANTITY, BagItem
@@ -148,6 +149,7 @@ class MainWindow(QMainWindow):
         body.setSpacing(10)
         self.pages = QStackedWidget()
         self.pages.addWidget(self._build_class_tab())
+        self.pages.addWidget(self._build_sprite_tab())
         self.pages.addWidget(self._build_bag_tab())
         body.addWidget(self._build_sidebar())
         body.addWidget(self.pages, 1)
@@ -176,8 +178,9 @@ class MainWindow(QMainWindow):
         self.lbl_nav_caption.setObjectName("SideCaption")
         layout.addWidget(self.lbl_nav_caption)
         self.nav_class = NavButton("1")
-        self.nav_bag = NavButton("2")
-        for index, btn in enumerate((self.nav_class, self.nav_bag)):
+        self.nav_sprite = NavButton("2")
+        self.nav_bag = NavButton("3")
+        for index, btn in enumerate((self.nav_class, self.nav_sprite, self.nav_bag)):
             btn.clicked.connect(lambda _c=False, i=index: self._go_page(i))
             layout.addWidget(btn)
         self.nav_class.setChecked(True)
@@ -207,10 +210,10 @@ class MainWindow(QMainWindow):
 
     def _go_page(self, index: int) -> None:
         self.pages.setCurrentIndex(index)
-        (self.nav_class, self.nav_bag)[index].setChecked(True)
+        (self.nav_class, self.nav_sprite, self.nav_bag)[index].setChecked(True)
 
     def _focus_search(self) -> None:
-        box = self.search if self.pages.currentIndex() == 0 else self.item_search
+        box = (self.search, self.sprite_search, self.item_search)[self.pages.currentIndex()]
         box.setFocus()
         box.selectAll()
 
@@ -349,6 +352,8 @@ class MainWindow(QMainWindow):
         self.lbl_installed_caption.setText(t("installed_caption"))
         self.lbl_class_title.setText(t("tab_class"))
         self.lbl_class_desc.setText(t("page_class_desc"))
+        self.lbl_sprite_title.setText(t("tab_sprite"))
+        self.lbl_sprite_desc.setText(t("page_sprite_desc"))
         self.lbl_bag_title.setText(t("tab_bag"))
         self.lbl_bag_desc.setText(t("page_bag_desc"))
         self.btn_apply.setText(t("btn_apply"))
@@ -366,6 +371,11 @@ class MainWindow(QMainWindow):
             btn.setText(t("btn_download"))
         self.btn_extract.setText(t("btn_extract"))
         self.chk_class.setText(t("chk_class"))
+        self.chk_sprite.setText(t("chk_sprite"))
+        self.sprite_help.setText(t("sprite_help"))
+        self.sprite_search.setPlaceholderText(t("search_sprite"))
+        self._fill_sprite_filters()
+        self.fill_sprite_list()
         self.lbl_jp.setText(t("lbl_jp"))
         self.jp_spin.setToolTip(t("tip_jp"))
         self.search.setPlaceholderText(t("search_class"))
@@ -532,6 +542,95 @@ class MainWindow(QMainWindow):
         layout.addWidget(self.preview, 1)
         return panel
 
+    def _build_sprite_tab(self) -> QFrame:
+        page = QFrame()
+        page.setObjectName("Page")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(14, 10, 14, 12)
+        self.chk_sprite = QCheckBox()
+        self.chk_sprite.setChecked(self.settings.change_sprite)
+        self.chk_sprite.toggled.connect(self._sprite_toggled)
+        self.lbl_sprite_title, self.lbl_sprite_desc = self._page_header(layout, self.chk_sprite)
+
+        self.sprite_body = QWidget()
+        body = QVBoxLayout(self.sprite_body)
+        body.setContentsMargins(0, 4, 0, 0)
+        self.sprite_help = QLabel()
+        self.sprite_help.setObjectName("Note")
+        self.sprite_help.setWordWrap(True)
+        self.sprite_help.setTextFormat(Qt.RichText)
+        body.addWidget(self.sprite_help)
+        row = QHBoxLayout()
+        self.sprite_search = QLineEdit()
+        self.sprite_search.setClearButtonEnabled(True)
+        self.sprite_search.textChanged.connect(self.fill_sprite_list)
+        row.addWidget(self.sprite_search, 1)
+        self.sprite_filter = QComboBox()
+        self.sprite_filter.currentIndexChanged.connect(self.fill_sprite_list)
+        row.addWidget(self.sprite_filter)
+        body.addLayout(row)
+        self.sprite_list = QListWidget()
+        self.sprite_list.currentItemChanged.connect(lambda *_a: self._update_nav())
+        body.addWidget(self.sprite_list, 1)
+        self.sprite_body.setEnabled(self.settings.change_sprite)
+        layout.addWidget(self.sprite_body, 1)
+        return page
+
+    def _sprite_toggled(self, checked: bool) -> None:
+        self.settings.change_sprite = checked
+        self.settings.save()
+        self.sprite_body.setEnabled(checked)
+        self._update_nav()
+
+    def _fill_sprite_filters(self) -> None:
+        current = self.sprite_filter.currentData()
+        self.sprite_filter.blockSignals(True)
+        self.sprite_filter.clear()
+        self.sprite_filter.addItem(i18n.t("sprite_cat_all"), "")
+        for key, label in sprites.category_labels().items():
+            self.sprite_filter.addItem(label, key)
+        index = self.sprite_filter.findData(current)
+        self.sprite_filter.setCurrentIndex(index if index >= 0 else 0)
+        self.sprite_filter.blockSignals(False)
+
+    def fill_sprite_list(self) -> None:
+        if not hasattr(self, "sprite_list"):
+            return
+        selected = self.selected_sprite()
+        stem = selected.stem if selected else self.settings.sprite_stem
+        query = self.sprite_search.text().strip().casefold()
+        category = self.sprite_filter.currentData() or ""
+        self.sprite_list.blockSignals(True)
+        self.sprite_list.clear()
+        options = [
+            option for option in sprites.CATALOG
+            if (not category or option.category == category)
+            and (not query or query in option.name().casefold())
+        ]
+        options.sort(key=lambda option: option.name().casefold())
+        restore = None
+        for option in options:
+            item = QListWidgetItem(option.name())
+            item.setData(Qt.UserRole, option.stem)
+            self.sprite_list.addItem(item)
+            if option.stem == stem:
+                restore = item
+        if restore is not None:
+            self.sprite_list.setCurrentItem(restore)
+        elif self.sprite_list.count():
+            self.sprite_list.setCurrentRow(0)
+        if not options:
+            empty = QListWidgetItem(i18n.t("sprite_no_match"))
+            empty.setFlags(Qt.NoItemFlags)
+            self.sprite_list.addItem(empty)
+        self.sprite_list.blockSignals(False)
+        self._update_nav()
+
+    def selected_sprite(self) -> Optional[SpriteOption]:
+        item = self.sprite_list.currentItem() if hasattr(self, "sprite_list") else None
+        stem = item.data(Qt.UserRole) if item is not None else None
+        return sprites.get(stem) if stem else None
+
     def _build_bag_tab(self) -> QFrame:
         page = QFrame()
         page.setObjectName("Page")
@@ -653,6 +752,12 @@ class MainWindow(QMainWindow):
                 kind, payload = entry
                 class_text, class_on = (payload[1].name if kind == ENTRY_CUSTOM else payload.name), True
         self.nav_class.set_texts(t("tab_class"), class_text, class_on)
+        if not self.chk_sprite.isChecked():
+            sprite_text, sprite_on = t("nav_off"), False
+        else:
+            option = self.selected_sprite()
+            sprite_text, sprite_on = (option.name(), True) if option else (t("nav_pick_sprite"), False)
+        self.nav_sprite.set_texts(t("tab_sprite"), sprite_text, sprite_on)
         if not self.chk_bag.isChecked():
             bag_text, bag_on = t("nav_off"), False
         else:
@@ -745,7 +850,10 @@ class MainWindow(QMainWindow):
         klass = installed.get("ClassName") or i18n.t("mod_original_class")
         bag = installed.get("BagItems") or []
         bag_text = i18n.t("mod_bag_count", n=len(bag)) if bag else i18n.t("mod_bag_original")
-        self.lbl_active.setText(i18n.t("mod_active", klass=html.escape(klass), bag=html.escape(bag_text)))
+        sprite = installed.get("SpriteName") or i18n.t("mod_sprite_original")
+        self.lbl_active.setText(i18n.t(
+            "mod_active", klass=html.escape(str(klass)), sprite=html.escape(str(sprite)),
+            bag=html.escape(bag_text)))
 
     # --------------------------------------------------------- class tab
 
@@ -1293,7 +1401,11 @@ class MainWindow(QMainWindow):
         if bag is not None and not bag:
             QMessageBox.information(self, i18n.t("empty_bag_title"), i18n.t("empty_bag_body"))
             return
-        if option is None and custom is None and bag is None:
+        sprite = self.selected_sprite() if self.chk_sprite.isChecked() else None
+        if self.chk_sprite.isChecked() and sprite is None:
+            QMessageBox.information(self, i18n.t("pick_sprite_title"), i18n.t("pick_sprite_body"))
+            return
+        if option is None and custom is None and bag is None and sprite is None:
             QMessageBox.information(self, i18n.t("nothing_title"), i18n.t("nothing_body"))
             return
         rel = self._require_ready()
@@ -1309,8 +1421,17 @@ class MainWindow(QMainWindow):
             if answer != QMessageBox.Yes:
                 return
 
+        if sprite is not None and not self.game_root():
+            QMessageBox.warning(self, i18n.t("dlg_no_game"), i18n.t("dlg_no_game_body"))
+            return
+        if sprite is not None and not prereqs.dotnet9_installed():
+            QMessageBox.warning(self, i18n.t("dlg_dotnet_title"), i18n.t("dlg_dotnet_body"))
+            return
+
         plan = mod_builder.plan_build(
-            self.tables, option.job_id if option else None, class_name, bag, custom=custom)
+            self.tables, option.job_id if option else None, class_name, bag, custom=custom,
+            sprite_stem=sprite.stem if sprite else None,
+            sprite_name=sprite.name() if sprite else None)
         jp = self.jp_spin.value()
         db = paths.vanilla_sqlite()
         fallback_names = {i: self.item_name(i) for i in self.tables.items}
@@ -1320,6 +1441,9 @@ class MainWindow(QMainWindow):
             self.settings.save()
         elif custom_path:
             self.settings.custom_class_file = str(custom_path)
+            self.settings.save()
+        if sprite is not None:
+            self.settings.sprite_stem = sprite.stem
             self.settings.save()
 
         def nxd_builder(p, work_dir):
@@ -1332,9 +1456,15 @@ class MainWindow(QMainWindow):
                                       skillset_name=p.custom.skillset, target_command_ids=p.ramza_command_ids)
             return nxd_db.build_nxd_files(db, paths.ff16tools_cli(), work_dir, class_edit, p.bag, fallback_names)
 
+        game = self.game_root()
+
         def work(log):
             log(i18n.t("log_building"))
-            staged = mod_builder.build_mod(plan, paths.user_data_dir() / "build", nxd_builder)
+            sprite_bytes = None
+            if plan.sprite_stem:
+                log(i18n.t("log_sprite", name=plan.sprite_name))
+                sprite_bytes = sprites.extract_sprite(game, paths.ff16tools_cli(), plan.sprite_stem)
+            staged = mod_builder.build_mod(plan, paths.user_data_dir() / "build", nxd_builder, sprite_bytes)
             target = mod_builder.install_mod(staged, reloaded.mods_folder(rel))
             log(i18n.t("log_installed", path=target))
             return reloaded.set_mod_enabled(rel, mod_builder.MOD_ID, True)
@@ -1344,6 +1474,8 @@ class MainWindow(QMainWindow):
             lines = []
             if class_name:
                 lines.append(i18n.t("done_class", name=class_name))
+            if plan.sprite_name:
+                lines.append(i18n.t("done_sprite", name=plan.sprite_name))
             if plan.bag:
                 lines.append(i18n.t("done_bag", n=len(plan.bag)))
             msg = i18n.t("done_intro") + "\n\n" + "\n".join(lines) + "\n\n"

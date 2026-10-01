@@ -1,0 +1,14 @@
+﻿-----------------------------------------
+- FF16Tools.CLI 1.13.0 by Nenkai
+-----------------------------------------
+- https://github.com/Nenkai
+- https://twitter.com/Nenkaai
+-----------------------------------------
+
+[13:10:50] [Info] Pack Info: 
+[13:10:50] [Info] - Internal Archive Name/Dir: char 
+[13:10:50] [Info] - Num Files: 4 
+[13:10:50] [Info] - Chunks: 1 
+[13:10:50] [Info] - Header Encryption: True 
+[13:10:50] [Info] - Uses Chunks: True 
+[13:10:50] [Info] Done. (C:\Program Files (x86)\Steam\steamapps\common\FINAL FANTASY TACTICS - The Ivalice Chronicles\data\enhanced\0001_files.txt) 

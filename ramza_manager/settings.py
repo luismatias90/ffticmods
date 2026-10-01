@@ -20,6 +20,8 @@ class Settings:
     custom_class_file: str = ""  # caminho da classe customizada; vazio = classe do jogo
     change_bag: bool = False
     bag_items: list = field(default_factory=list)  # [[item_id, quantidade], ...]
+    change_sprite: bool = False
+    sprite_stem: str = ""  # folha escolhida; vazio = sprite original do Ramza
     language: str = ""  # "pt" ou "en"; vazio até o assistente perguntar
     wizard_done: bool = False
 

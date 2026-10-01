@@ -4,7 +4,7 @@ import xml.etree.ElementTree as ET
 
 import pytest
 
-from ramza_manager import class_catalog, mod_builder, nxd_db, paths
+from ramza_manager import class_catalog, mod_builder, nxd_db, paths, sprites
 from ramza_manager.tables import load_reference_tables
 
 
@@ -214,6 +214,28 @@ def test_single_items_need_no_new_special_rows(tmp_path):
     keys = [k for (k,) in con.execute('SELECT Key FROM "SystemBonusSpecialItem-en"')]
     assert keys == [1, 2, 3, 5]
     con.close()
+
+
+def test_sprite_catalog_is_human_sheets_only():
+    stems = [option.stem for option in sprites.CATALOG]
+    assert len(stems) == len(set(stems))
+    assert sprites.get("aguri").name_en == "Agrias"
+    assert sprites.get("ramuza") is None
+    assert sprites.game_path("knight_m") == "fftpack/unit/battle_knight_m_spr.bin"
+
+
+def test_sprite_replaces_ramzas_three_sheets(tables, tmp_path):
+    plan = mod_builder.plan_build(tables, None, None, sprite_stem="aguri", sprite_name="Agrias")
+    assert not plan.is_empty
+    assert plan.job_xml is None
+    root = mod_builder.build_mod(plan, tmp_path / "stage", sprite_bytes=b"SPRITE")
+    for name in ("battle_ramuza_spr.bin", "battle_ramuza2_spr.bin", "battle_ramuza3_spr.bin"):
+        path = root / "FFTIVC" / "data" / "enhanced" / "fftpack" / "unit" / name
+        assert path.read_bytes() == b"SPRITE"
+    config = json.loads((root / "ModConfig.json").read_text(encoding="utf-8"))
+    plugin = config["PluginData"]["SoloRamzaManager"]
+    assert plugin["SpriteStem"] == "aguri"
+    assert plugin["SpriteName"] == "Agrias"
 
 
 def test_bag_only_plan_does_not_touch_class(tables, tmp_path):
