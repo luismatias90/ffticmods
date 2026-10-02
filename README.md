@@ -10,7 +10,7 @@ Troca a classe do Ramza em **FINAL FANTASY TACTICS - The Ivalice Chronicles (ver
 - As três classes próprias do Ramza (Squire do Cap. 1, Squire dos Cap. 2–3 e Gallant Knight do Cap. 4) viram a classe escolhida, com skillset, equipamentos, multiplicadores e crescimento de atributos, Move/Jump, evasão, habilidades inatas e nome no menu.
 - As skills do skillset (ação, reação, suporte e movimento) custam 0 JP. Você aprende tudo no menu *Learn* logo no começo.
 - Se a classe não puder usar o equipamento inicial do Ramza, ele troca por um item básico compatível (ex.: Broadsword → Rod para Black Mage).
-- Opcional: o sprite de batalha do Ramza (capítulos 1, 2–3 e 4) vira o de outro personagem humano ou de uma classe genérica. O retrato do menu e algumas cenas de evento podem continuar com o Ramza original.
+- Opcional: o sprite de batalha do Ramza (capítulos 1, 2–3 e 4) vira o de outro personagem humano ou de uma classe genérica. O mod troca a folha clássica e a HD que o modo Enhanced desenha (`system/ffto/g2d/tex_830.bin` a `tex_835.bin`) e as cores do Ramza na tabela `CharCLUT`, que o Enhanced usa no lugar da paleta da folha. O retrato do menu também troca (`ui/ffto/common/face`), menos para a Lettie e a maioria dos aldeões, que não têm retrato próprio e mantêm o do Ramza. Algumas cenas de evento podem continuar com o Ramza original.
 
 **Não muda:**
 - Nível, EXP e atributos base: o Ramza começa no nível 1 e evolui normalmente.

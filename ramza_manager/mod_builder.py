@@ -282,14 +282,28 @@ def mod_config(plan: BuildPlan) -> dict:
     }
 
 
-def write_ramza_sprite(mod_root: Path, sprite_bytes: bytes) -> None:
-    """Grava a mesma folha nos três sprites de batalha do Ramza."""
-    from .sprites import RAMZA_SPRITE_FILES
+def write_ramza_sprite(mod_root: Path, sprite) -> None:
+    """Grava a folha escolhida (clássica e HD) por cima das três folhas de batalha do Ramza."""
+    from .sprites import CHARCLUT_FILE, RAMZA_G2D_TOPS, RAMZA_SPRITE_FILES
 
+    data_dir = mod_root / "FFTIVC" / "data" / GAME_MODE
     for relative in RAMZA_SPRITE_FILES:
-        dest = mod_root / "FFTIVC" / "data" / GAME_MODE / relative
+        dest = data_dir / relative
         dest.parent.mkdir(parents=True, exist_ok=True)
-        dest.write_bytes(sprite_bytes)
+        dest.write_bytes(sprite.classic)
+    g2d_dir = data_dir / "system" / "ffto" / "g2d"
+    g2d_dir.mkdir(parents=True, exist_ok=True)
+    for top in RAMZA_G2D_TOPS:
+        (g2d_dir / f"tex_{top}.bin").write_bytes(sprite.hd_top)
+        (g2d_dir / f"tex_{top + 1}.bin").write_bytes(sprite.hd_bottom)
+    if sprite.charclut_nxd:
+        nxd_dir = data_dir / "nxd"
+        nxd_dir.mkdir(parents=True, exist_ok=True)
+        (nxd_dir / CHARCLUT_FILE).write_bytes(sprite.charclut_nxd)
+    for relative, content in sprite.portrait.items():
+        dest = data_dir / relative
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_bytes(content)
 
 
 def write_mod_folder(plan: BuildPlan, mod_root: Path, nxd_files: list[Path]) -> None:
@@ -350,7 +364,7 @@ def build_mod(
     plan: BuildPlan,
     staging_root: Path,
     nxd_builder: Optional[Callable[[BuildPlan, Path], list[Path]]] = None,
-    sprite_bytes: Optional[bytes] = None,
+    sprite=None,
 ) -> Path:
     """Monta o mod completo em `staging_root/<ModId>` e devolve esse caminho."""
     shutil.rmtree(staging_root, ignore_errors=True)
@@ -358,6 +372,6 @@ def build_mod(
     mod_root.mkdir(parents=True)
     nxd_files = nxd_builder(plan, staging_root / "_nxd_work") if nxd_builder else []
     write_mod_folder(plan, mod_root, nxd_files)
-    if sprite_bytes and plan.sprite_stem:
-        write_ramza_sprite(mod_root, sprite_bytes)
+    if sprite is not None and plan.sprite_stem:
+        write_ramza_sprite(mod_root, sprite)
     return mod_root

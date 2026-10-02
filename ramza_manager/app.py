@@ -1460,11 +1460,11 @@ class MainWindow(QMainWindow):
 
         def work(log):
             log(i18n.t("log_building"))
-            sprite_bytes = None
+            sprite_assets = None
             if plan.sprite_stem:
                 log(i18n.t("log_sprite", name=plan.sprite_name))
-                sprite_bytes = sprites.extract_sprite(game, paths.ff16tools_cli(), plan.sprite_stem)
-            staged = mod_builder.build_mod(plan, paths.user_data_dir() / "build", nxd_builder, sprite_bytes)
+                sprite_assets = sprites.extract_sprite(game, paths.ff16tools_cli(), plan.sprite_stem)
+            staged = mod_builder.build_mod(plan, paths.user_data_dir() / "build", nxd_builder, sprite_assets)
             target = mod_builder.install_mod(staged, reloaded.mods_folder(rel))
             log(i18n.t("log_installed", path=target))
             return reloaded.set_mod_enabled(rel, mod_builder.MOD_ID, True)

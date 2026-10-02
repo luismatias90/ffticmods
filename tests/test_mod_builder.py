@@ -1,6 +1,8 @@
 import json
 import sqlite3
+import struct
 import xml.etree.ElementTree as ET
+import zlib
 
 import pytest
 
@@ -222,20 +224,78 @@ def test_sprite_catalog_is_human_sheets_only():
     assert sprites.get("aguri").name_en == "Agrias"
     assert sprites.get("ramuza") is None
     assert sprites.game_path("knight_m") == "fftpack/unit/battle_knight_m_spr.bin"
+    for option in sprites.CATALOG:
+        top = sprites.hd_top_index(option.stem)
+        assert top not in sprites.RAMZA_G2D_TOPS and top + 1 not in sprites.RAMZA_G2D_TOPS
+    assert set(sprites._FACE) <= {o.stem for o in sprites.CATALOG}
+    assert not set(sprites._FACE.values()) & set(sprites.RAMZA_FACES)
+    assert sprites.has_portrait("zaru") and not sprites.has_portrait("ledy")
+
+
+def _fake_g2d(textures: list[bytes]) -> bytes:
+    body = bytearray(b"\0" * 2048)
+    toc = bytearray()
+    for data in textures:
+        packed = b"YOX\0" + struct.pack("<III", 6, len(data), 0) + zlib.compress(data)
+        toc += struct.pack("<IIII", len(body), len(packed), 6, 0)
+        body += packed + b"\0" * (-len(packed) % 2048)
+    struct.pack_into("<4sIII", body, 0, b"YOX\0", 0, len(body), len(textures))
+    return bytes(body + toc)
+
+
+def test_g2d_texture_reads_by_table_index():
+    archive = _fake_g2d([b"zero", b"one" * 100, b"two"])
+    assert sprites.g2d_texture(archive, 0) == b"zero"
+    assert sprites.g2d_texture(archive, 1) == b"one" * 100
+    assert sprites.g2d_texture(archive, 2) == b"two"
+    with pytest.raises(ValueError):
+        sprites.g2d_texture(archive, 3)
 
 
 def test_sprite_replaces_ramzas_three_sheets(tables, tmp_path):
     plan = mod_builder.plan_build(tables, None, None, sprite_stem="aguri", sprite_name="Agrias")
     assert not plan.is_empty
     assert plan.job_xml is None
-    root = mod_builder.build_mod(plan, tmp_path / "stage", sprite_bytes=b"SPRITE")
+    assets = sprites.SpriteAssets(b"SPRITE", b"TOP", b"BOTTOM")
+    root = mod_builder.build_mod(plan, tmp_path / "stage", sprite=assets)
+    data = root / "FFTIVC" / "data" / "enhanced"
     for name in ("battle_ramuza_spr.bin", "battle_ramuza2_spr.bin", "battle_ramuza3_spr.bin"):
-        path = root / "FFTIVC" / "data" / "enhanced" / "fftpack" / "unit" / name
-        assert path.read_bytes() == b"SPRITE"
+        assert (data / "fftpack" / "unit" / name).read_bytes() == b"SPRITE"
+    g2d = data / "system" / "ffto" / "g2d"
+    assert sorted(p.name for p in g2d.iterdir()) == [f"tex_{i}.bin" for i in range(830, 836)]
+    for top in (830, 832, 834):
+        assert (g2d / f"tex_{top}.bin").read_bytes() == b"TOP"
+        assert (g2d / f"tex_{top + 1}.bin").read_bytes() == b"BOTTOM"
+    assert not (data / "nxd").exists() and not (data / "ui").exists()
     config = json.loads((root / "ModConfig.json").read_text(encoding="utf-8"))
     plugin = config["PluginData"]["SoloRamzaManager"]
     assert plugin["SpriteStem"] == "aguri"
     assert plugin["SpriteName"] == "Agrias"
+
+
+def test_sprite_writes_colors_and_portrait(tables, tmp_path):
+    plan = mod_builder.plan_build(tables, None, None, sprite_stem="zaru", sprite_name="Zalbaag")
+    portrait = sprites.ramza_portrait_files(b"FACE", b"PARTS")
+    assets = sprites.SpriteAssets(b"SPRITE", b"TOP", b"BOTTOM", b"CLUT", portrait)
+    data = mod_builder.build_mod(plan, tmp_path / "stage", sprite=assets) / "FFTIVC" / "data" / "enhanced"
+    assert (data / "nxd" / "charclut.nxd").read_bytes() == b"CLUT"
+    faces = data / "ui" / "ffto" / "common" / "face"
+    assert len(list((faces / "texture").iterdir())) == 12
+    assert (faces / "texture" / "wldface_002_10_uitx.tex").read_bytes() == b"FACE"
+    assert (faces / "textureparts" / "wldface_003_11_uitx.utexpt").read_bytes() == b"PARTS"
+
+
+def test_ramza_clut_rows_get_the_sheet_palette():
+    classic = struct.pack("<16H", 0, 0x7FFF, 0x001F, *range(13)) + b"\0" * 480
+    clut = sprites.classic_clut(classic)
+    assert clut[:9] == [0, 0, 0, 248, 248, 248, 248, 0, 0]
+    con = sqlite3.connect(":memory:")
+    con.execute('CREATE TABLE "CharCLUT" (Key, Key2, CLUTData)')
+    con.executemany('INSERT INTO "CharCLUT" VALUES (?, ?, ?)', [(k, k2, "old") for k in (1, 2, 3, 254) for k2 in (0, 1)])
+    sprites.apply_ramza_clut(con, clut)
+    rows = dict(((k, k2), d) for k, k2, d in con.execute('SELECT * FROM "CharCLUT"'))
+    assert json.loads(rows[(3, 1)]) == clut
+    assert rows[(254, 0)] == "old"
 
 
 def test_bag_only_plan_does_not_touch_class(tables, tmp_path):
