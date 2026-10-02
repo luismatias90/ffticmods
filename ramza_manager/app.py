@@ -14,7 +14,7 @@ from PySide6.QtGui import QColor, QDesktopServices, QKeySequence, QShortcut
 from PySide6.QtWidgets import (
     QAbstractItemView, QApplication, QButtonGroup, QCheckBox, QComboBox, QDialog, QFileDialog, QFrame, QGridLayout,
     QGroupBox, QHBoxLayout, QHeaderView, QLabel, QLineEdit, QListWidget, QListWidgetItem, QMainWindow, QMessageBox,
-    QPlainTextEdit, QPushButton, QSpinBox, QSplitter, QStackedWidget, QTableWidget, QTableWidgetItem,
+    QPlainTextEdit, QPushButton, QSpinBox, QSplitter, QStackedWidget, QStatusBar, QTableWidget, QTableWidgetItem,
     QTextBrowser, QVBoxLayout, QWidget,
 )
 
@@ -156,13 +156,29 @@ class MainWindow(QMainWindow):
         root.addLayout(body, 1)
 
         self.log_box = QPlainTextEdit()
+        self.log_box.setObjectName("Log")
         self.log_box.setReadOnly(True)
-        self.log_box.setMaximumHeight(60)
+        self.log_box.setMaximumHeight(130)
+        self.log_box.hide()
         root.addWidget(self.log_box)
         self.setCentralWidget(central)
 
+        status = QStatusBar()
+        status.setSizeGripEnabled(False)
+        self.lbl_status = QLabel()
+        status.addWidget(self.lbl_status, 1)
+        self.btn_log = QPushButton()
+        self.btn_log.setCursor(Qt.PointingHandCursor)
+        self.btn_log.clicked.connect(self._toggle_log)
+        status.addPermanentWidget(self.btn_log)
+        self.setStatusBar(status)
+
         QShortcut(QKeySequence.Find, self, self._focus_search)
         QShortcut(QKeySequence.New, self, self.new_custom)
+        for index in range(3):
+            QShortcut(QKeySequence(f"Ctrl+{index + 1}"), self, lambda i=index: self._go_page(i))
+        for keys in ("Ctrl+Return", "Ctrl+Enter"):
+            QShortcut(QKeySequence(keys), self, self.apply_mod)
         QShortcut(QKeySequence.Delete, self.bag_table, self.remove_bag_item, context=Qt.WidgetShortcut)
         self.retranslate_ui()
 
@@ -357,7 +373,13 @@ class MainWindow(QMainWindow):
         self.lbl_bag_title.setText(t("tab_bag"))
         self.lbl_bag_desc.setText(t("page_bag_desc"))
         self.btn_apply.setText(t("btn_apply"))
+        self.btn_apply.setToolTip(t("apply_tip"))
         self.btn_restore.setText(t("btn_restore"))
+        for index, btn in enumerate((self.nav_class, self.nav_sprite, self.nav_bag), 1):
+            btn.setToolTip(t("nav_tip", n=index))
+        self._update_log_button()
+        if self._thread is None:
+            self.lbl_status.setText(t("status_ready"))
         self.setup_group.setTitle(theme.ornament(t("setup_title")))
         self.btn_wizard.setText(t("btn_wizard"))
         self.lbl_row_game.setText(f"<b>{t('row_game')}</b>")
@@ -719,6 +741,19 @@ class MainWindow(QMainWindow):
 
     def log(self, text: str) -> None:
         self.log_box.appendPlainText(text)
+        last = next((line.strip() for line in reversed(text.splitlines()) if line.strip()), "")
+        if last:
+            self.lbl_status.setText(last)
+            self.lbl_status.setToolTip(text)
+
+    def _toggle_log(self) -> None:
+        self.log_box.setVisible(not self.log_box.isVisible())
+        self._update_log_button()
+        if self.log_box.isVisible():
+            self.log_box.verticalScrollBar().setValue(self.log_box.verticalScrollBar().maximum())
+
+    def _update_log_button(self) -> None:
+        self.btn_log.setText(i18n.t("btn_log_hide") if self.log_box.isVisible() else i18n.t("btn_log_show"))
 
     def _jp_changed(self, value: int) -> None:
         self.settings.jp_cost = value
@@ -932,9 +967,9 @@ class MainWindow(QMainWindow):
         font.setBold(header)
         font.setItalic(not header)
         item.setFont(font)
-        item.setForeground(QColor(theme.CRIMSON if header else theme.INK_MUTED))
+        item.setForeground(QColor(theme.SECTION_FG if header else theme.EMPTY_FG))
         if header:
-            item.setBackground(QColor(theme.PARCHMENT_DARK))
+            item.setBackground(QColor(theme.SECTION_BG))
         return item
 
     def _set_filter(self, key: str) -> None:
@@ -1317,6 +1352,7 @@ class MainWindow(QMainWindow):
             return
         self.log(busy_text)
         self.setEnabled(False)
+        QApplication.setOverrideCursor(Qt.WaitCursor)
         thread = QThread(self)
         worker = Worker(fn)
         worker.moveToThread(thread)
@@ -1333,6 +1369,7 @@ class MainWindow(QMainWindow):
         if self._thread is not None:
             self._thread.quit()
             self._thread.wait()
+            QApplication.restoreOverrideCursor()
         self._thread = None
         self._worker = None
         self.setEnabled(True)

@@ -243,6 +243,7 @@ class SetupWizard(QDialog):
         row.addStretch()
         page.layout().addLayout(row)
         self.extract_log = QPlainTextEdit()
+        self.extract_log.setObjectName("Log")
         self.extract_log.setReadOnly(True)
         self.extract_log.setMaximumHeight(120)
         page.layout().addWidget(self.extract_log)
@@ -279,7 +280,7 @@ class SetupWizard(QDialog):
 
     @staticmethod
     def _title(label: QLabel) -> None:
-        label.setStyleSheet("font-size: 16pt; font-weight: bold; color: #8e2626;")
+        label.setObjectName("WizardTitle")
 
     def _wrap(self, inner: QWidget) -> QScrollArea:
         frame = QFrame()
