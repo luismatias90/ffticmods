@@ -33,12 +33,21 @@ def dotnet9_installed() -> bool:
     return any(line.startswith("Microsoft.NETCore.App 9.") for line in out.splitlines())
 
 
-def reloaded_running() -> bool:
+def _process_running(image: str) -> bool:
     try:
-        out = _hidden_run(["tasklist", "/FI", "IMAGENAME eq Reloaded-II.exe", "/NH"]).stdout
+        out = _hidden_run(["tasklist", "/FI", f"IMAGENAME eq {image}", "/NH"]).stdout
     except (OSError, subprocess.TimeoutExpired):
         return False
-    return "reloaded-ii.exe" in out.lower()
+    return image.lower() in out.lower()
+
+
+def reloaded_running() -> bool:
+    return _process_running("Reloaded-II.exe")
+
+
+def game_running() -> bool:
+    """O jogo grava o save ao fechar; editar com ele aberto perde a edição."""
+    return _process_running("FFT_enhanced.exe")
 
 
 def status_html(ok: bool, text: str) -> str:

@@ -7,14 +7,12 @@ from dataclasses import asdict, dataclass, field
 from typing import Optional
 
 from . import paths
-from .mod_builder import DEFAULT_JP_COST
 
 
 @dataclass
 class Settings:
     game_root: str = ""
     reloaded_root: str = ""
-    jp_cost: int = DEFAULT_JP_COST
     change_class: bool = True
     class_job_id: Optional[int] = None
     custom_class_file: str = ""  # caminho da classe customizada; vazio = classe do jogo
@@ -22,6 +20,7 @@ class Settings:
     bag_items: list = field(default_factory=list)  # [[item_id, quantidade], ...]
     change_sprite: bool = False
     sprite_stem: str = ""  # folha escolhida; vazio = sprite original do Ramza
+    save_file: str = ""  # enhanced.png escolhido; vazio = o mais recente encontrado
     language: str = ""  # "pt" ou "en"; vazio até o assistente perguntar
     wizard_done: bool = False
 

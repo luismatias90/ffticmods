@@ -31,15 +31,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "btn_download": "Baixar",
         "btn_extract": "Extrair / atualizar",
         "chk_class": "Trocar a classe do Ramza",
-        "lbl_jp": "Custo de JP das skills:",
-        "tip_jp": "0 = grátis. Se o jogo não deixar aprender com 0, use 1.",
         "search_class": "Buscar classe ou skillset...",
-        "chk_bag": "Trocar os itens do bônus da Deluxe Edition pela minha lista",
+        "chk_bag": "Somar estes itens ao inventário ao gravar no save",
         "bag_help": (
-            "<b>Como funciona:</b> o jogo entrega os itens do <b>bônus da Deluxe Edition</b> no inventário. "
-            "Este app troca o conteúdo desse bônus pela sua lista (as cores preta/vermelha do Ramza "
-            "continuam). Funciona só com a Deluxe e, em geral, vale para <b>jogo novo</b>: um save que já "
-            "recebeu o bônus não recebe de novo. <i>Experimental: teste primeiro com uma lista pequena.</i>"
+            "<b>Como funciona:</b> os itens são <b>somados ao inventário</b> do slot quando você clica em "
+            "<b>Gravar no save</b>, na aba <b>Save do jogo</b> (até 99 de cada). Funciona em qualquer edição "
+            "e em qualquer save, não só em jogo novo. Gravar de novo soma de novo."
         ),
         "search_item": "Buscar item ou tipo (ex.: Elixir, Sword, Ring)...",
         "lbl_qty": "Quantidade:",
@@ -51,7 +48,6 @@ STRINGS: dict[str, dict[str, str]] = {
         "col_qty": "Qtd",
         "btn_remove": "Remover selecionado",
         "btn_clear": "Limpar",
-        "btn_deluxe": "Padrão da Deluxe",
         "status_not_found": "não encontrado",
         "status_reloaded_missing": "não encontrado — instale e aponte a pasta",
         "status_installed": "instalado",
@@ -63,10 +59,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "status_missing": "Falta configurar {n} item(ns) — veja abaixo",
         "mod_none": "<b>Nenhum mod</b> — jogo original",
         "mod_original_class": "original (Squire)",
-        "mod_bag_count": "{n} item(ns) no bônus",
-        "mod_bag_original": "bônus original",
         "mod_sprite_original": "original",
-        "mod_active": "Ramza: <b>{klass}</b><br>Sprite: <b>{sprite}</b><br>Bolsa: <b>{bag}</b>",
+        "mod_active": "Ramza: <b>{klass}</b><br>Sprite: <b>{sprite}</b>",
         "preview_empty": (
             "<h2>Escolha uma classe</h2>"
             "<p>Selecione uma classe na lista para ver skills, equipamentos e atributos.</p>"
@@ -91,9 +85,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "equip": "<p><b>Equipamentos:</b> {names}</p>",
         "h_stats": (
             "<h3>Atributos</h3><table cellspacing=4><tr><th></th><th>Multiplicador</th>"
-            "<th>Crescimento*</th></tr>{rows}</table>"
-            "<p class='muted'>* crescimento: quanto menor, mais o atributo sobe por nível.</p>"
+            "<th>Crescimento*</th><th>Nível {level}**</th></tr>{rows}</table>"
+            "<p class='muted'>* crescimento: quanto menor, mais o atributo sobe por nível.<br>"
+            "** simulação considerando que todos os níveis foram ganhos nesta classe "
+            "(o crescimento vale para a classe em que o nível foi ganho). "
+            "HP/MP variam numa faixa porque o valor inicial é sorteado.</p>"
         ),
+        "sim_level": "Simular atributos no nível:",
+        "sim_level_tip": "Mostra HP, MP, Speed, PA e MA que o Ramza teria nesse nível com esta classe.",
         "status_line": "<p><b>Status inato/inicial:</b> {names}</p>",
         "h_gear": "<h3>Equipamento inicial ajustado</h3>",
         "class_label": "{name} — {skillset} ({n} skills)",
@@ -122,11 +121,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "pick_class_body": (
             "Selecione uma classe na aba 'Classe do Ramza', ou desmarque 'Trocar a classe do Ramza'."
         ),
-        "empty_bag_title": "Lista vazia",
-        "empty_bag_body": "Adicione itens na aba 'Itens iniciais', ou desmarque a troca do bônus.",
         "nothing_title": "Nada para aplicar",
         "nothing_body": (
-            "Marque a troca de classe, de sprite e/ou dos itens. Para voltar ao jogo original, "
+            "Marque a troca de classe e/ou de sprite. Os itens vão para o save, na aba 'Save do jogo'. "
+            "Para voltar ao jogo original, "
             "use 'Restaurar jogo original'."
         ),
         "pick_sprite_title": "Escolha um sprite",
@@ -160,8 +158,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "log_installed": "Mod instalado em {path}",
         "done_title": "Mod aplicado",
         "done_intro": "Pronto!",
-        "done_class": "• Ramza agora é {name}.",
-        "done_bag": "• Bônus da Deluxe trocado por {n} item(ns). Comece um jogo novo para recebê-los.",
+        "done_class": "• Ramza agora é {name}. Depois do primeiro save, dê JP a ele na aba 'Save do jogo'.",
         "done_ok": "O mod já está ativado no Reloaded-II. Abra o jogo pelo Reloaded-II.",
         "done_no_app": (
             "Não achei o FFT_enhanced.exe no Reloaded-II. Adicione o jogo lá e ative os mods "
@@ -171,7 +168,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "log_removed": "Mod removido. Jogo original.",
         "log_not_installed": "O mod não estava instalado.",
         "restored_title": "Restaurado",
-        "restored_body": "O mod foi removido: Ramza e bônus voltaram ao original.",
+        "restored_body": "O mod foi removido: o Ramza voltou ao original.",
         "nxd_no_pac": "Nenhum .pac encontrado em data/enhanced. O jogo está instalado?",
         "nxd_scanning": "Procurando tabelas em {name}...",
         "nxd_ff16_fail": "FF16Tools falhou ao ler {name} (código {code}). O .NET 9 Runtime está instalado?",
@@ -280,13 +277,14 @@ STRINGS: dict[str, dict[str, str]] = {
             "<ol>"
             "<li><b>Feche o Reloaded-II</b> antes de aplicar qualquer coisa.</li>"
             "<li>Na aba <b>Classe do Ramza</b>, escolha uma classe. O painel da direita mostra "
-            "skills (custo de JP antes → depois), equipamentos e atributos. "
+            "skills (com o custo de JP), equipamentos e atributos. "
             "As três classes próprias do Ramza passam a ser essa. Ele continua no nível 1.</li>"
-            "<li>O custo de JP padrão é <b>0</b>. Se o jogo não deixar aprender, mude para <b>1</b> e aplique de novo.</li>"
+            "<li>As skills custam o JP normal. Depois do primeiro save, use a aba <b>Save do jogo</b> "
+            "para dar 9999 JP ao Ramza (e ajustar Bravura e Fé).</li>"
             "<li>Opcional, na aba <b>Sprite do Ramza</b>: escolha outro sprite de batalha. "
             "Cores e retrato mudam junto; algumas cenas podem continuar com o Ramza.</li>"
-            "<li>Opcional, na aba <b>Itens iniciais</b>: monte a bolsa. Só vale na "
-            "<b>Deluxe Edition</b> e em <b>jogo novo</b>. Teste primeiro com poucos itens.</li>"
+            "<li>Opcional, na aba <b>Itens iniciais</b>: monte a lista de itens. Eles são somados ao "
+            "inventário quando você grava o save na aba <b>Save do jogo</b>.</li>"
             "<li>Clique em <b>Aplicar no jogo</b>. Abra o jogo <b>pelo Reloaded-II</b>.</li>"
             "<li><b>Restaurar jogo original</b> remove o mod.</li>"
             "</ol>"
@@ -317,7 +315,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "nav_pick_class": "Escolha uma classe",
         "nav_bag_n": "{n} item(ns) na lista",
         "page_class_desc": "Escolha a classe que o Ramza vai usar: uma do jogo ou uma criada por você.",
-        "page_bag_desc": "Monte a lista de itens que o Ramza recebe no começo do jogo.",
+        "page_bag_desc": "Monte a lista de itens que entram no inventário do save.",
         "filter_all": "Todas",
         "list_no_match": "Nenhuma classe encontrada. Tente outra busca ou outro filtro.",
         "lbl_items_catalog": "Itens do jogo",
@@ -423,6 +421,66 @@ STRINGS: dict[str, dict[str, str]] = {
         "cc_field_innates": "inatas",
         "cc_field_equip": "equipamentos",
         "wiz_checklist_title": "Situação agora",
+        "tab_save": "Save do jogo",
+        "page_save_desc": "Edita um save manual: JP, Bravura e Fé do Ramza e itens no inventário.",
+        "nav_save_caption": "EDITAR SAVE",
+        "nav_save_slot": "{title}",
+        "nav_save_none": "Gravado na hora, fora do 'Aplicar'",
+        "save_help": (
+            "<b>Como usar:</b> com o mod aplicado, comece o jogo e salve num slot manual "
+            "(o primeiro save aparece depois da primeira batalha). <b>Feche o jogo</b>, escolha o slot aqui "
+            "e grave. O JP vai para a classe própria do Ramza, que o mod trocou pela classe escolhida: "
+            "use no menu <i>Learn</i>. As skills custam o JP normal do jogo. "
+            "Os itens da aba <b>Itens iniciais</b> são somados ao inventário. "
+            "O app guarda uma cópia do save antes de gravar. "
+            "<i>Carregue o slot manual: o autosave/continuar não recebe a edição.</i>"
+        ),
+        "save_file_row": "Arquivo:",
+        "save_not_found": "save não encontrado — abra o jogo e salve uma vez, ou use Procurar...",
+        "btn_save_reload": "Recarregar",
+        "dlg_save_file": "Escolha o enhanced.png",
+        "save_slots": "Slots",
+        "save_slot_n": "Slot {n}",
+        "save_slot_line": "{title}\nRamza Nv {level} · JP {jp} · Bravura {brave} · Fé {faith}",
+        "save_slot_no_ramza": "{title}\n(Ramza não encontrado neste slot)",
+        "save_no_slots": "Nenhum slot salvo.",
+        "save_pick_slot": "Escolha um slot.",
+        "save_ramza": "Ramza — nível {level}",
+        "save_jp": "JP da classe do Ramza:",
+        "save_jp_tip": "JP disponível para aprender as skills da classe do Ramza (máx. 9999).",
+        "btn_save_jp_max": "9999",
+        "save_brave": "Bravura:",
+        "save_brave_tip": "Bravura permanente (0–100): dano de punhos e de algumas armas, chance de reação.",
+        "save_faith": "Fé:",
+        "save_faith_tip": "Fé permanente (0–100): força das magias que o Ramza lança e recebe.",
+        "btn_save_write": "Gravar no save",
+        "save_confirm_title": "Gravar no save",
+        "save_confirm_items": "\nItens somados:\n{items}\n",
+        "save_items_n": "Itens: {n} tipo(s) da aba 'Itens iniciais' serão somados ao inventário.",
+        "save_items_none": "Itens: nenhum (monte a lista na aba 'Itens iniciais').",
+        "save_confirm_body": (
+            "Gravar no slot {title}?\n\nJP: {jp}\nBravura: {brave}\nFé: {faith}\n{items}\n"
+            "Uma cópia do save original fica guardada."
+        ),
+        "close_game_title": "Feche o jogo",
+        "close_game_body": "Feche o jogo antes de gravar: ele regrava o save e a edição se perde.",
+        "save_done_title": "Save gravado",
+        "save_done_body": "Pronto! Abra o jogo e carregue o slot.\n\nCópia do save original:\n{backup}",
+        "log_save_reading": "Lendo o save...",
+        "log_save_read": "{n} slot(s) lido(s) de {name}.",
+        "log_save_writing": "Gravando o save...",
+        "log_save_written": "Slot {title} gravado. Backup: {backup}",
+        "save_err_slot": "O slot {n} está vazio.",
+        "save_err_no_ramza": "Não achei o Ramza no slot {n}.",
+        "save_err_png": "O arquivo não parece um save do jogo (.png).",
+        "save_err_unpack": "Não consegui abrir {name} com o FF16Tools.",
+        "save_err_pack": "Não consegui montar o save novo com o FF16Tools.",
+        "save_err_verify": "O save novo não bateu com a edição; nada foi gravado.",
+        "jp_total": "<p>Total para aprender tudo: <span class='jp'>{total} JP</span></p>",
+        "jp_total_over": (
+            "<p>Total para aprender tudo: <span class='jp'>{total} JP</span> — mais que os {max} JP "
+            "do save; o resto vem das batalhas.</p>"
+        ),
     },
     LANG_EN: {
         "window_title": "Solo Ramza Manager {version} — FFT: The Ivalice Chronicles (Enhanced)",
@@ -446,15 +504,12 @@ STRINGS: dict[str, dict[str, str]] = {
         "btn_download": "Download",
         "btn_extract": "Extract / update",
         "chk_class": "Change Ramza's class",
-        "lbl_jp": "Skill JP cost:",
-        "tip_jp": "0 = free. If the game won't let you learn at 0, use 1.",
         "search_class": "Search class or skillset...",
-        "chk_bag": "Replace the Deluxe Edition bonus items with my list",
+        "chk_bag": "Add these items to the inventory when writing the save",
         "bag_help": (
-            "<b>How it works:</b> the game delivers the <b>Deluxe Edition bonus</b> items into the inventory. "
-            "This app replaces that bonus with your list (Ramza's black/red colors stay). "
-            "It only works with the Deluxe Edition and, in general, only on a <b>new game</b>: a save that "
-            "already received the bonus will not receive it again. <i>Experimental: try a short list first.</i>"
+            "<b>How it works:</b> the items are <b>added to the slot's inventory</b> when you click "
+            "<b>Write to save</b> on the <b>Game save</b> tab (up to 99 of each). Works with any edition "
+            "and any save, not just a new game. Writing again adds them again."
         ),
         "search_item": "Search item or type (e.g. Elixir, Sword, Ring)...",
         "lbl_qty": "Quantity:",
@@ -466,7 +521,6 @@ STRINGS: dict[str, dict[str, str]] = {
         "col_qty": "Qty",
         "btn_remove": "Remove selected",
         "btn_clear": "Clear",
-        "btn_deluxe": "Deluxe default",
         "status_not_found": "not found",
         "status_reloaded_missing": "not found — install it and point to the folder",
         "status_installed": "installed",
@@ -478,10 +532,8 @@ STRINGS: dict[str, dict[str, str]] = {
         "status_missing": "{n} item(s) still need setup — see below",
         "mod_none": "<b>No mod</b> — original game",
         "mod_original_class": "original (Squire)",
-        "mod_bag_count": "{n} item(s) in the bonus",
-        "mod_bag_original": "original bonus",
         "mod_sprite_original": "original",
-        "mod_active": "Ramza: <b>{klass}</b><br>Sprite: <b>{sprite}</b><br>Bag: <b>{bag}</b>",
+        "mod_active": "Ramza: <b>{klass}</b><br>Sprite: <b>{sprite}</b>",
         "preview_empty": (
             "<h2>Choose a class</h2>"
             "<p>Select a class in the list to see skills, equipment and stats.</p>"
@@ -506,9 +558,14 @@ STRINGS: dict[str, dict[str, str]] = {
         "equip": "<p><b>Equipment:</b> {names}</p>",
         "h_stats": (
             "<h3>Stats</h3><table cellspacing=4><tr><th></th><th>Multiplier</th>"
-            "<th>Growth*</th></tr>{rows}</table>"
-            "<p class='muted'>* growth: the lower the number, the more the stat rises per level.</p>"
+            "<th>Growth*</th><th>Level {level}**</th></tr>{rows}</table>"
+            "<p class='muted'>* growth: the lower the number, the more the stat rises per level.<br>"
+            "** simulated as if every level was gained in this class "
+            "(growth applies to the class the level was gained in). "
+            "HP/MP show a range because the starting value is random.</p>"
         ),
+        "sim_level": "Simulate stats at level:",
+        "sim_level_tip": "Shows the HP, MP, Speed, PA and MA Ramza would have at this level with this class.",
         "status_line": "<p><b>Innate/starting status:</b> {names}</p>",
         "h_gear": "<h3>Adjusted starting gear</h3>",
         "class_label": "{name} — {skillset} ({n} skills)",
@@ -535,11 +592,10 @@ STRINGS: dict[str, dict[str, str]] = {
         "close_reloaded_restore": "Close Reloaded-II before restoring.",
         "pick_class_title": "Choose a class",
         "pick_class_body": "Select a class on the 'Ramza's class' tab, or uncheck 'Change Ramza's class'.",
-        "empty_bag_title": "Empty list",
-        "empty_bag_body": "Add items on the 'Starting items' tab, or uncheck the bonus swap.",
         "nothing_title": "Nothing to apply",
         "nothing_body": (
-            "Check the class change, the sprite change, and/or the item swap. To go back to the original game, "
+            "Check the class change and/or the sprite change. Items go into the save, on the 'Game save' tab. "
+            "To go back to the original game, "
             "use 'Restore the original game'."
         ),
         "pick_sprite_title": "Pick a sprite",
@@ -574,8 +630,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "log_installed": "Mod installed at {path}",
         "done_title": "Mod applied",
         "done_intro": "Done!",
-        "done_class": "• Ramza is now {name}.",
-        "done_bag": "• Deluxe bonus replaced with {n} item(s). Start a new game to receive them.",
+        "done_class": "• Ramza is now {name}. After the first save, give him JP in the 'Game save' tab.",
         "done_ok": "The mod is already enabled in Reloaded-II. Launch the game from Reloaded-II.",
         "done_no_app": (
             "FFT_enhanced.exe is not in Reloaded-II. Add the game there and enable "
@@ -585,7 +640,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "log_removed": "Mod removed. Original game.",
         "log_not_installed": "The mod was not installed.",
         "restored_title": "Restored",
-        "restored_body": "The mod was removed: Ramza and the bonus are back to the original.",
+        "restored_body": "The mod was removed: Ramza is back to the original.",
         "nxd_no_pac": "No .pac found in data/enhanced. Is the game installed?",
         "nxd_scanning": "Looking for tables in {name}...",
         "nxd_ff16_fail": "FF16Tools failed to read {name} (code {code}). Is the .NET 9 Runtime installed?",
@@ -694,13 +749,14 @@ STRINGS: dict[str, dict[str, str]] = {
             "<ol>"
             "<li><b>Close Reloaded-II</b> before you apply anything.</li>"
             "<li>On the <b>Ramza's class</b> tab, pick a class. The panel on the right shows "
-            "skills (JP cost before → after), equipment and stats. "
+            "skills (with their JP cost), equipment and stats. "
             "Ramza's three own classes become that class. He still starts at level 1.</li>"
-            "<li>The default JP cost is <b>0</b>. If the game won't let you learn, set it to <b>1</b> and apply again.</li>"
+            "<li>Skills cost their normal JP. After the first save, use the <b>Game save</b> tab "
+            "to give Ramza 9999 JP (and adjust Bravery and Faith).</li>"
             "<li>Optional, on the <b>Ramza's sprite</b> tab: pick another battle sprite. "
             "Colors and portrait change with it; some scenes can still show Ramza.</li>"
-            "<li>Optional, on the <b>Starting items</b> tab: build the bag. This only works with the "
-            "<b>Deluxe Edition</b> and a <b>new game</b>. Try a short list first.</li>"
+            "<li>Optional, on the <b>Starting items</b> tab: build the item list. The items are added to "
+            "the inventory when you write the save on the <b>Game save</b> tab.</li>"
             "<li>Click <b>Apply to the game</b>. Launch the game <b>from Reloaded-II</b>.</li>"
             "<li><b>Restore the original game</b> removes the mod.</li>"
             "</ol>"
@@ -731,7 +787,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "nav_pick_class": "Pick a class",
         "nav_bag_n": "{n} item(s) in the list",
         "page_class_desc": "Pick the class Ramza will use: one from the game or one you made.",
-        "page_bag_desc": "Build the list of items Ramza gets at the start of the game.",
+        "page_bag_desc": "Build the list of items that go into the save's inventory.",
         "filter_all": "All",
         "list_no_match": "No class found. Try another search or filter.",
         "lbl_items_catalog": "Game items",
@@ -837,6 +893,66 @@ STRINGS: dict[str, dict[str, str]] = {
         "cc_field_innates": "innates",
         "cc_field_equip": "equipment",
         "wiz_checklist_title": "Status right now",
+        "tab_save": "Game save",
+        "page_save_desc": "Edits a manual save: Ramza's JP, Bravery and Faith, and inventory items.",
+        "nav_save_caption": "EDIT SAVE",
+        "nav_save_slot": "{title}",
+        "nav_save_none": "Written right away, not by 'Apply'",
+        "save_help": (
+            "<b>How to use:</b> with the mod applied, start the game and save to a manual slot "
+            "(the first save shows up after the first battle). <b>Close the game</b>, pick the slot here "
+            "and write. The JP goes to Ramza's own class, which the mod replaced with the chosen class: "
+            "spend it in the <i>Learn</i> menu. Skills cost the game's normal JP. "
+            "Items from the <b>Starting items</b> tab are added to the inventory. "
+            "The app keeps a copy of the save before writing. "
+            "<i>Load the manual slot: the autosave/continue doesn't get the edit.</i>"
+        ),
+        "save_file_row": "File:",
+        "save_not_found": "save not found — open the game and save once, or use Browse...",
+        "btn_save_reload": "Reload",
+        "dlg_save_file": "Pick enhanced.png",
+        "save_slots": "Slots",
+        "save_slot_n": "Slot {n}",
+        "save_slot_line": "{title}\nRamza Lv {level} · JP {jp} · Bravery {brave} · Faith {faith}",
+        "save_slot_no_ramza": "{title}\n(Ramza not found in this slot)",
+        "save_no_slots": "No saved slots.",
+        "save_pick_slot": "Pick a slot.",
+        "save_ramza": "Ramza — level {level}",
+        "save_jp": "Ramza's class JP:",
+        "save_jp_tip": "JP available to learn the skills of Ramza's class (max. 9999).",
+        "btn_save_jp_max": "9999",
+        "save_brave": "Bravery:",
+        "save_brave_tip": "Permanent Bravery (0–100): damage of fists and some weapons, reaction chance.",
+        "save_faith": "Faith:",
+        "save_faith_tip": "Permanent Faith (0–100): strength of spells Ramza casts and receives.",
+        "btn_save_write": "Write to save",
+        "save_confirm_title": "Write to save",
+        "save_confirm_items": "\nItems added:\n{items}\n",
+        "save_items_n": "Items: {n} kind(s) from the 'Starting items' tab will be added to the inventory.",
+        "save_items_none": "Items: none (build the list on the 'Starting items' tab).",
+        "save_confirm_body": (
+            "Write to slot {title}?\n\nJP: {jp}\nBravery: {brave}\nFaith: {faith}\n{items}\n"
+            "A copy of the original save is kept."
+        ),
+        "close_game_title": "Close the game",
+        "close_game_body": "Close the game before writing: it rewrites the save and the edit would be lost.",
+        "save_done_title": "Save written",
+        "save_done_body": "Done! Open the game and load the slot.\n\nCopy of the original save:\n{backup}",
+        "log_save_reading": "Reading the save...",
+        "log_save_read": "{n} slot(s) read from {name}.",
+        "log_save_writing": "Writing the save...",
+        "log_save_written": "Slot {title} written. Backup: {backup}",
+        "save_err_slot": "Slot {n} is empty.",
+        "save_err_no_ramza": "Couldn't find Ramza in slot {n}.",
+        "save_err_png": "The file doesn't look like a game save (.png).",
+        "save_err_unpack": "Couldn't open {name} with FF16Tools.",
+        "save_err_pack": "Couldn't build the new save with FF16Tools.",
+        "save_err_verify": "The new save didn't match the edit; nothing was written.",
+        "jp_total": "<p>Total to learn everything: <span class='jp'>{total} JP</span></p>",
+        "jp_total_over": (
+            "<p>Total to learn everything: <span class='jp'>{total} JP</span> — more than the save's "
+            "{max} JP; the rest comes from battles.</p>"
+        ),
     },
 }
 

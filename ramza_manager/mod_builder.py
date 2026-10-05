@@ -3,8 +3,9 @@ Gera o mod Reloaded-II do Solo Ramza Manager. Duas partes independentes:
 
 1. Classe: transforma as classes do Ramza (Jobs 1, 2 e 3) na classe escolhida,
    ou numa classe customizada (classe base + skillset montado à mão).
-2. Bolsa: troca o conteúdo do pacote de bônus da Deluxe Edition pelos itens
-   escolhidos (o jogo entrega esse pacote no inventário).
+2. Sprite: troca as folhas de batalha (e cores/retrato) do Ramza.
+
+Os itens iniciais não passam pelo mod: vão direto para o save (save_edit.py).
 
 Estrutura gerada (mesmo formato usado pelo Mod Studio / fftivc.utility.modloader):
 
@@ -13,12 +14,11 @@ Estrutura gerada (mesmo formato usado pelo Mod Studio / fftivc.utility.modloader
   <ModId>/FFTIVC/tables/enhanced/JobCommandData.xml   skillsets 25-27 (classe customizada)
   <ModId>/FFTIVC/tables/enhanced/AbilityData.xml  tira DontLearnWithJP (se houver)
   <ModId>/FFTIVC/tables/enhanced/SpawnData.xml    equipamento inicial (se preciso)
-  <ModId>/FFTIVC/data/enhanced/nxd/ability.*.nxd  JP das skills da classe
   <ModId>/FFTIVC/data/enhanced/nxd/job.*.nxd      nome + skillset nos Jobs 1-3
   <ModId>/FFTIVC/data/enhanced/nxd/jobcommand.*.nxd   nome do skillset customizado
-  <ModId>/FFTIVC/data/enhanced/nxd/systembonus*.nxd   conteúdo do pacote de bônus
 
-Nada de nível, EXP, atributos base ou história é tocado.
+As skills mantêm o custo de JP original; o JP para comprá-las vem da edição
+do save (save_edit.py). Nada de nível, EXP, atributos base ou história é tocado.
 """
 
 from __future__ import annotations
@@ -33,7 +33,6 @@ from xml.sax.saxutils import escape
 from . import __version__
 from .class_catalog import RAMZA_JOB_IDS
 from .custom_class import MAX_ACTIONS, MAX_RSM, CustomClass
-from .nxd_db import MAX_QUANTITY, BagItem
 from .tables import EMPTY_ITEM, Job, ReferenceTables
 
 MOD_ID = "fftivc.soloramza.classmanager"
@@ -43,7 +42,6 @@ GAME_MODE = "enhanced"
 RAMZA_SPAWN_ID = 2
 # Skillset próprio de cada Job do Ramza (Mettle). Só esses Jobs os usam.
 RAMZA_COMMAND_IDS = {1: 25, 2: 26, 3: 27}
-DEFAULT_JP_COST = 0
 
 # Campos que continuam sendo os do Ramza:
 # - ImmuneStatus: o Ramza é imune a Traitor; mantido para não arriscar cenas.
@@ -74,7 +72,6 @@ class BuildPlan:
     spawn_xml: Optional[str]
     ability_ids: list[int]
     spawn_changes: dict[str, tuple[int, int]] = field(default_factory=dict)  # slot -> (antes, depois)
-    bag: Optional[list[BagItem]] = None  # None = não mexe no pacote de bônus
     custom: Optional[CustomClass] = None  # classe customizada (skillset nos 25-27)
     command_xml: Optional[str] = None
     sprite_stem: Optional[str] = None  # folha fftpack que substitui as três do Ramza
@@ -87,7 +84,7 @@ class BuildPlan:
 
     @property
     def is_empty(self) -> bool:
-        return self.source_job is None and not self.bag and not self.sprite_stem
+        return self.source_job is None and not self.sprite_stem
 
 
 # ---------------------------------------------------------------------------
@@ -169,21 +166,10 @@ def starting_gear_changes(tables: ReferenceTables, source: Job) -> dict[str, tup
     return changes
 
 
-def validate_bag(tables: ReferenceTables, bag: list[BagItem]) -> list[BagItem]:
-    """Remove itens inexistentes/duplicados e limita a quantidade a 1-99."""
-    merged: dict[int, int] = {}
-    for entry in bag:
-        if entry.item_id <= 0 or entry.item_id not in tables.items:
-            continue
-        merged[entry.item_id] = merged.get(entry.item_id, 0) + entry.quantity
-    return [BagItem(i, max(1, min(MAX_QUANTITY, q))) for i, q in merged.items()]
-
-
 def plan_build(
     tables: ReferenceTables,
     source_job_id: Optional[int],
     class_name: Optional[str],
-    bag: Optional[list[BagItem]] = None,
     custom: Optional[CustomClass] = None,
     sprite_stem: Optional[str] = None,
     sprite_name: Optional[str] = None,
@@ -193,11 +179,10 @@ def plan_build(
     `custom`, a classe base e o nome vêm dela e `source_job_id`/`class_name`
     são ignorados.
     """
-    bag = validate_bag(tables, bag) if bag else None
     if custom is not None:
         source_job_id, class_name = custom.base_job, custom.name
     if source_job_id is None:
-        return BuildPlan(None, None, None, None, None, [], {}, bag,
+        return BuildPlan(None, None, None, None, None, [], {},
                          sprite_stem=sprite_stem, sprite_name=sprite_name)
     if source_job_id in RAMZA_JOB_IDS:
         raise ValueError("Escolha uma classe diferente das classes originais do Ramza.")
@@ -230,7 +215,7 @@ def plan_build(
         entry.update({slot: str(new) for slot, (_old, new) in changes.items()})
         spawn_xml = _table_xml("SpawnTable", "Spawn", [entry], note)
 
-    return BuildPlan(source, class_name, job_xml, ability_xml, spawn_xml, ability_ids, changes, bag,
+    return BuildPlan(source, class_name, job_xml, ability_xml, spawn_xml, ability_ids, changes,
                      custom, command_xml, sprite_stem, sprite_name)
 
 
@@ -244,15 +229,12 @@ def mod_config(plan: BuildPlan) -> dict:
         parts.append(f"Ramza joga como {plan.class_name}, classe customizada (base: Job {plan.source_job.id}), "
                      f"skillset {plan.custom.skillset} com {len(plan.ability_ids)} skills.")
     elif plan.source_job is not None:
-        parts.append(f"Ramza joga como {plan.class_name} (Job {plan.source_job.id}), todas as skills da classe liberadas.")
-    if plan.bag:
-        parts.append(f"Bônus da Deluxe Edition trocado por {len(plan.bag)} item(ns) escolhido(s).")
+        parts.append(f"Ramza joga como {plan.class_name} (Job {plan.source_job.id}), skills da classe com o custo de JP original.")
     if plan.sprite_name:
         parts.append(f"Sprite de batalha do Ramza trocado por {plan.sprite_name}.")
     plugin = {
         "ClassName": plan.class_name,
         "SourceJobId": plan.source_job.id if plan.source_job else None,
-        "BagItems": [[b.item_id, b.quantity] for b in plan.bag] if plan.bag else [],
         "CustomClass": plan.custom.to_dict() if plan.custom else None,
         "SpriteStem": plan.sprite_stem,
         "SpriteName": plan.sprite_name,
@@ -346,7 +328,7 @@ def uninstall_mod(mods_folder: Path) -> bool:
 
 
 def read_installed(mods_folder: Path) -> Optional[dict]:
-    """O que o mod instalado aplica ({ClassName, SourceJobId, BagItems}), ou None se não há mod."""
+    """O que o mod instalado aplica ({ClassName, SourceJobId, ...}), ou None se não há mod."""
     config = mods_folder / MOD_ID / "ModConfig.json"
     try:
         data = json.loads(config.read_text(encoding="utf-8-sig"))

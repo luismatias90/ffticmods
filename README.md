@@ -1,125 +1,172 @@
 # Solo Ramza Manager
 
-Troca a classe do Ramza em **FINAL FANTASY TACTICS - The Ivalice Chronicles (versão Enhanced)** por qualquer classe do jogo (genéricas, de personagens únicos ou de chefes/inimigos), com todas as skills da classe custando 0 JP. Feito para runs solo Ramza.
+Swaps Ramza's class in **FINAL FANTASY TACTICS - The Ivalice Chronicles (Enhanced version)** for any class in the game: generic, unique-character, or boss/enemy. It can also use a custom class with a mixed skillset. Skills keep their normal JP cost, and the app edits your save so Ramza gets 9999 JP (plus whatever Bravery, Faith and starting items you want). Built for solo Ramza runs.
 
-**App pronto:** `dist\SoloRamzaManager\SoloRamzaManager.exe`. Em outro PC, basta clonar o repositório (ou baixar o ZIP pelo GitHub) e rodar esse `.exe`. Ele precisa da pasta `_internal` ao lado, então copie a pasta `SoloRamzaManager` inteira, não só o `.exe`. Não precisa de Python; só do **.NET 9 Runtime** (ver abaixo).
+**Ready-to-run app:** `dist\SoloRamzaManager\SoloRamzaManager.exe`. On another PC, clone the repository (or download the ZIP from GitHub) and run that `.exe`. It needs the `_internal` folder next to it, so copy the whole `SoloRamzaManager` folder, not just the `.exe`. Python is not required, only the **.NET 9 Runtime** (see below).
 
-## O que muda e o que não muda
+## What changes and what doesn't
 
-**Muda (só no Ramza):**
-- As três classes próprias do Ramza (Squire do Cap. 1, Squire dos Cap. 2–3 e Gallant Knight do Cap. 4) viram a classe escolhida, com skillset, equipamentos, multiplicadores e crescimento de atributos, Move/Jump, evasão, habilidades inatas e nome no menu.
-- As skills do skillset (ação, reação, suporte e movimento) custam 0 JP. Você aprende tudo no menu *Learn* logo no começo.
-- Se a classe não puder usar o equipamento inicial do Ramza, ele troca por um item básico compatível (ex.: Broadsword → Rod para Black Mage).
-- Opcional: o sprite de batalha do Ramza (capítulos 1, 2–3 e 4) vira o de outro personagem humano ou de uma classe genérica. O mod troca a folha clássica e a HD que o modo Enhanced desenha (`system/ffto/g2d/tex_830.bin` a `tex_835.bin`) e as cores do Ramza na tabela `CharCLUT`, que o Enhanced usa no lugar da paleta da folha. O retrato do menu também troca (`ui/ffto/common/face`), menos para a Lettie e a maioria dos aldeões, que não têm retrato próprio e mantêm o do Ramza. Algumas cenas de evento podem continuar com o Ramza original.
+**Changes (Ramza only):**
+- Ramza's three own classes (Squire in Ch. 1, Squire in Ch. 2–3, and Gallant Knight in Ch. 4) become the chosen class. That includes skillset, equipment, stat multipliers and growth, Move/Jump, evasion, innate abilities and the menu name.
+- Skillset abilities (action, reaction, support and movement) keep the game's original JP cost. To buy them right away, give Ramza 9999 JP from the **Game save** tab (see below).
+- If the class can't use Ramza's starting equipment, it is swapped for a basic compatible item (e.g. Broadsword → Rod for Black Mage).
+- Optional: Ramza's battle sprite (chapters 1, 2–3 and 4) becomes another human character's or a generic class's sprite. The mod replaces the classic sheet and the HD sheet the Enhanced mode draws (`system/ffto/g2d/tex_830.bin` to `tex_835.bin`), plus Ramza's colors in the `CharCLUT` table, which Enhanced uses instead of the sheet's palette. The menu portrait changes too (`ui/ffto/common/face`), except for Lettie and most villagers, who have no portrait of their own and keep Ramza's. Some event scenes may still show the original Ramza.
 
-**Não muda:**
-- Nível, EXP e atributos base: o Ramza começa no nível 1 e evolui normalmente.
-- A imunidade do Ramza a *Traitor*, a história, os inimigos e os outros personagens.
-- Os arquivos do jogo. Tudo é aplicado por um mod do Reloaded-II, e o botão *Restaurar* desfaz.
+**Doesn't change:**
+- Level, EXP and base stats: Ramza starts at level 1 and levels up normally.
+- Skill JP costs, for Ramza or for any other unit.
+- Ramza's *Traitor* immunity, the story, enemies and other characters.
+- The game files. Everything is applied through a Reloaded-II mod, and *Restore the original game* undoes it.
 
-> Efeito colateral: o custo 0 de JP vale para qualquer unidade que tenha essas skills. Numa run solo isso não faz diferença.
+## Prerequisites (one time only)
 
-## Pré-requisitos (uma vez só)
-
-1. **.NET 9 Runtime** (necessário para ler os dados do jogo): https://dotnet.microsoft.com/download/dotnet/9.0
+1. **.NET 9 Runtime** (needed to read the game data): https://dotnet.microsoft.com/download/dotnet/9.0
 2. **Reloaded-II**: https://github.com/Reloaded-Project/Reloaded-II/releases/latest
-   - Extraia numa pasta (ex.: `C:\Reloaded-II`) e abra o `Reloaded-II.exe`.
-   - Clique em **+ (Add an Application)** e escolha `FFT_enhanced.exe` na pasta do jogo.
-3. **FFTIVC Mod Loader** (`fftivc.utility.modloader`): no Reloaded-II, procure por "fftivc" em *Download Mods*, ou baixe em https://github.com/Nenkai/fftivc.utility.modloader/releases/latest
-4. Abra o jogo uma vez pela Steam para criar as pastas de save.
+   - Extract it to a folder (e.g. `C:\Reloaded-II`) and open `Reloaded-II.exe`.
+   - Click **+ (Add an Application)** and pick `FFT_enhanced.exe` in the game folder.
+3. **FFTIVC Mod Loader** (`fftivc.utility.modloader`): in Reloaded-II, search for "fftivc" under *Download Mods*, or download it from https://github.com/Nenkai/fftivc.utility.modloader/releases/latest
+4. Launch the game once through Steam so the save folders get created.
 
-## Como usar
+## How to use
 
-Na primeira abertura, um assistente pergunta se a interface fica em **português** ou **inglês** e percorre o que instalar e como configurar. Dá para reabri-lo pelo botão **Assistente**, e trocar o idioma a qualquer momento no canto da janela (PT-BR / EN).
+On first launch, a wizard asks whether the interface should be in **English** or **Portuguese** and walks you through what to install and how to set it up. You can reopen it with the **Wizard** button and switch languages at any time from the corner of the window (PT-BR / EN).
 
-1. **Feche o Reloaded-II** e abra o `SoloRamzaManager.exe`.
-2. Confira o painel **Configuração**. O jogo e o Reloaded-II são detectados sozinhos; se não forem, use *Procurar...*
-3. Clique em **Extrair / atualizar** (leva uns 10 segundos, só lê o jogo). Repita depois de updates do jogo.
-4. Escolha uma classe nas abas **Genéricas**, **Personagens únicos** ou **Chefes / Inimigos ⚠**. O painel da direita mostra as skills (com o custo de JP antes → depois), equipamentos e atributos.
-5. Opcional: na aba **Sprite do Ramza**, escolha outro sprite de batalha.
-6. Clique em **Aplicar no jogo**. O mod é instalado e ativado no perfil do `FFT_enhanced.exe`.
-7. Abra o jogo **pelo Reloaded-II**.
+The window has a sidebar with four steps: **Ramza's class**, **Ramza's sprite**, **Starting items** and **Game save** (`Ctrl+1` to `Ctrl+4`). The *What will change* card shows what will be applied, and the *Installed now* card shows what is already in the game.
 
-Para trocar de classe, é só escolher outra e aplicar de novo. **Restaurar jogo original** remove o mod.
+1. **Close Reloaded-II** and open `SoloRamzaManager.exe`.
+2. Check the **Setup** panel. The game and Reloaded-II are detected automatically; if not, use *Browse...*
+3. Click **Extract / update** (takes about 10 seconds and only reads the game). Repeat after game updates.
+4. Pick a class under **Generic**, **Unique characters**, **Bosses / Enemies ⚠** or **✦ My classes**. The right panel shows the skills with their JP cost (and the total to learn everything), equipment and stats.
+5. Optional: pick another battle sprite in **Ramza's sprite**.
+6. Click **Apply to the game** (`Ctrl+Enter`). The mod is installed and enabled in the `FFT_enhanced.exe` profile.
+7. Launch the game **through Reloaded-II**, start a new game and save to a manual slot.
+8. Close the game and, in the **Game save** tab, give Ramza 9999 JP (see below).
 
-## Classes customizadas (skillset misto)
+To switch classes, pick another one and apply again. **Restore the original game** removes the mod.
 
-Na sub-aba **✦ Minhas classes** já vêm 7 classes prontas, marcadas com ★:
+### Stat simulator
 
-| Classe | Base | Ideia |
+The class preview has a *Simulate stats at level* field. Type a level (1–99) and the stats table shows the HP, MP, Speed, PA and MA Ramza would have with that class, computed from the class multiplier and growth. HP/MP are shown as a range because the starting value is random.
+
+## Custom classes (mixed skillset)
+
+The **✦ My classes** tab comes with 7 built-in classes, marked with ★:
+
+| Class | Base | Idea |
 |---|---|---|
-| Red Mage | Black Mage | Magia branca e negra básicas, com espada e escudo leve |
-| Mystic Knight | Knight | Spellblade (lâmina com status) e magias elementais |
-| Paladin | Knight | Holy Sword e curas |
-| Dark Knight | Knight | Fell Sword, drenos e *sap*; mais HP/PA e menos esquiva |
-| Sage | White Mage | Branca e negra avançadas, MA alto e corpo frágil |
-| Ranger | Archer | Aim e Aimed Shot, com arco, besta e arma de fogo, Move 4 |
-| Battle Monk | Monk | Artes marciais e os gritos de guerra do Ramza |
+| Red Mage | Black Mage | Basic white and black magic, with sword and light shield |
+| Mystic Knight | Knight | Spellblade (status blades) and elemental spells |
+| Paladin | Knight | Holy Sword and healing |
+| Dark Knight | Knight | Fell Sword, drains and *sap*; more HP/PA, less evasion |
+| Sage | White Mage | Advanced white and black magic, high MA, fragile body |
+| Ranger | Archer | Aim and Aimed Shot, with bow, crossbow and gun, Move 4 |
+| Battle Monk | Monk | Martial arts plus Ramza's battle shouts |
 
-As classes de fábrica não podem ser apagadas. Editar uma delas salva uma cópia sua. Elas ficam em `data/classes/` e são geradas por `packaging/make_presets.py`.
+Built-in classes can't be deleted. Editing one saves a copy of your own. They live in `data/classes/` and are generated by `packaging/make_presets.py`.
 
-Você também pode criar uma classe própria:
+The `biblioteca_classes` folder has 11 more ready-made classes to bring in with **Import...**: Alchemist, Arcane Archer, Druid, Freelancer, Glass Cannon, Rogue, Shogun, Time Knight, Troubadour, Warlock and White Monk. `index.json` summarizes each one.
 
-1. **Nova classe...** abre o editor. Dê um nome à classe e ao skillset e escolha a **classe base**, que define atributos, equipamentos, Move/Jump, evasão e habilidades inatas.
-2. Monte o skillset com habilidades de **qualquer classe** do jogo: até **16 de ação** e **6 de reação/suporte/movimento**. A busca aceita nome, skillset ou tipo, e *Copiar skills da base* é um ponto de partida.
-3. Na aba **Atributos e equipamento** do editor, ajuste o que quiser em relação à classe base:
-   - **multiplicador** e **crescimento** de HP, MP, Speed, PA e MA;
-   - **Move**, **Jump** e **esquiva da classe (C-Ev)**;
-   - até 4 **habilidades inatas** (sempre ativas, fora dos slots);
-   - **equipamentos permitidos** (armas, escudo, cabeça, corpo, acessórios).
+You can also create your own class:
 
-   O que você não mexe continua igual ao da classe base, e segue a nova base se você trocar de base. Esquiva mágica não aparece porque no jogo ela não é da classe: vem de escudos, capas e acessórios.
-4. Selecione a classe na lista e clique em **Aplicar no jogo**, como com uma classe normal. O equipamento inicial do Ramza é trocado se a classe não puder usá-lo.
+1. **New class...** (`Ctrl+N`) opens the editor. Name the class and the skillset, and pick the **base class**, which sets stats, equipment, Move/Jump, evasion and innate abilities.
+2. Build the skillset from abilities of **any class** in the game: up to **16 action** abilities and **6 reaction/support/movement** abilities each. Search accepts name, skillset or type, and *Copy base skills* gives you a starting point.
+3. In the editor's **Stats and equipment** page, adjust anything you want relative to the base class:
+   - HP, MP, Speed, PA and MA **multiplier** and **growth**;
+   - **Move**, **Jump** and **class evasion (C-Ev)**;
+   - up to 4 **innate abilities** (always active, outside the slots);
+   - **allowed equipment** (weapons, shield, head, body, accessories).
 
-O skillset misto vai nos skillsets próprios do Ramza (Mettle, ids 25–27), que só ele usa. Inimigos e outros personagens não mudam. O custo de JP escolhido vale para as habilidades do skillset, com o mesmo efeito colateral descrito acima.
+   Anything you leave alone matches the base class, and follows the new base if you change it. Magic evasion isn't listed because in the game it doesn't belong to the class: it comes from shields, cloaks and accessories.
+4. Select the class in the list and click **Apply to the game**, as with a normal class. Ramza's starting equipment is swapped if the class can't use it.
 
-**Compartilhar:** **Exportar...** gera um arquivo `.ramzaclass.json` (poucos KB) para mandar no Discord, fórum etc. Quem recebe usa **Importar...**. O arquivo é conferido na importação: habilidades que não existem ou estão no slot errado saem com aviso, e uma classe base inválida é recusada. A biblioteca fica em `%LOCALAPPDATA%\SoloRamzaManager\classes`.
+The mixed skillset goes into Ramza's own skillsets (Mettle, ids 25–27), which only he uses. Enemies and other characters are unaffected. Each ability costs the JP it has in the game.
 
-> Habilidades de Item, Throw, Jump e Arithmeticks têm mecânica própria e podem se comportar diferente fora do skillset original. O editor avisa quando elas estão na lista. Teste antes da run.
+**Sharing:** **Export...** creates a `.ramzaclass.json` file (a few KB) you can post on Discord, forums, etc. The recipient uses **Import...**. The file is validated on import: abilities that don't exist or are in the wrong slot are dropped with a warning, and an invalid base class is rejected. Your library is stored in `%LOCALAPPDATA%\SoloRamzaManager\classes`.
 
-## Itens iniciais (bolsa) — requer Deluxe Edition
+> Item, Throw, Jump and Arithmeticks abilities have their own mechanics and may behave differently outside their original skillset. The editor warns you when they are in the list. Test before your run.
 
-Na aba **Itens iniciais (bolsa)** você monta a lista de itens com que quer começar: busque qualquer item (armas, armaduras, acessórios, consumíveis), escolha a quantidade (1–99) e clique em **Adicionar →**. Marque **Trocar os itens do bônus da Deluxe Edition** e clique em **Aplicar no jogo**. A classe e a bolsa são independentes: dá para usar só uma delas, desmarcando a outra.
+## Game save: JP, Bravery, Faith and items
 
-Como funciona: o jogo entrega os itens do bônus da Deluxe Edition no inventário. O app troca o conteúdo desse bônus pela sua lista, e as cores preta/vermelha do Ramza continuam. Por isso:
-- só funciona em cópias com a **Deluxe Edition**;
-- vale para **jogo novo**, porque um save que já recebeu o bônus não recebe de novo;
-- é **experimental**: teste primeiro com 2 ou 3 itens. Se listas grandes não aparecerem inteiras, reduza.
+The game has no starting-JP table, so JP comes from a save edit. The **Game save** tab opens `enhanced.png` (in `Documents\My Games\FINAL FANTASY TACTICS - The Ivalice Chronicles\Steam\<id>\`), lists the manual slots, and shows Ramza's level, JP, Bravery and Faith in each one. Items from the **Starting items** tab are written here too (see below).
 
-**Padrão da Deluxe** volta a lista para os itens originais do bônus.
+1. With the mod applied, start the game and save to a manual slot. The first save is available after the first battle.
+2. **Close the game.** It rewrites the save on exit and would undo the edit. The app refuses to write while the game is running.
+3. In the **Game save** tab, pick the slot, click **9999** (or type the JP), set **Bravery** and **Faith** (0–100) and click **Write to save**.
+4. Open the game and load that slot. The autosave (*Continue*) doesn't get the edit.
 
-### Primeiro teste no jogo
-- Novo jogo → batalha de Orbonne: o Ramza deve aparecer no nível 1 com o nome e o skillset da classe.
-- No menu de formação → *Learn*: todas as skills da classe devem custar 0 JP.
-- **Se o jogo não deixar aprender com 0 JP**, mude *Custo de JP das skills* para `1` e aplique de novo.
+The JP goes to Ramza's own class, the one the mod replaced with your chosen class, and shows up in the *Learn* menu. 9999 is the game's maximum. Some classes cost more than that to learn everything (Summoner, Time Mage, Assassin…), and the preview warns you when that's the case. The rest comes from battles.
 
-### Classes de chefe/inimigo (⚠)
-Lucavi, Ultima Demon e similares usam animações feitas para outros sprites e podem travar com o sprite do Ramza. **Salve antes de testar.** Monstros não aparecem na lista, porque o Ramza ficaria sem menus e equipamentos.
+Before writing, the app keeps a copy of the save in `%LOCALAPPDATA%\SoloRamzaManager\save_backups`. To roll back, copy the backup over `enhanced.png` (renaming it). The new save is reopened and checked before it replaces the original, and the PNG thumbnail is kept.
 
-## Para desenvolver
+## Starting items
+
+In the **Starting items** tab you build the list of items you want: search any item (weapons, armor, accessories, consumables), pick the quantity (1–99) and click **Add →**. Tick **Add these items to the inventory when writing the save**.
+
+The items go into the save along with the JP: in the **Game save** tab, pick the slot and click **Write to save**. The confirmation shows each item with its current → new quantity. Because of that:
+- it works with any edition (no Deluxe needed) and any save, not only a new game;
+- quantities are **added** to what the slot already has, up to 99 of each item;
+- writing again adds again. To write only JP, Bravery and Faith, untick the box in the **Starting items** tab.
+
+### First in-game test
+- New game → Orbonne battle: Ramza should show up at level 1 with the class name and skillset.
+- Formation menu → *Learn*: the class skills should show up with their normal JP cost.
+- Save, close the game, write 9999 JP from the **Game save** tab and load the slot: Ramza should have 9999 JP to spend.
+
+### Boss/enemy classes (⚠)
+Lucavi, Ultima Demon and similar classes use animations made for other sprites and may freeze with Ramza's sprite. **Save before testing.** Monsters aren't listed, because Ramza would end up with no menus or equipment.
+
+## Development
 
 ```powershell
 py -3.12 -m venv .venv
 .\.venv\Scripts\pip install PySide6 pyinstaller pytest
-.\.venv\Scripts\python SoloRamzaManager.pyw        # rodar
-.\.venv\Scripts\python -m pytest                   # testes
-.\.venv\Scripts\pyinstaller packaging\SoloRamzaManager.spec --noconfirm   # gera dist\SoloRamzaManager\
+.\.venv\Scripts\python SoloRamzaManager.pyw        # run
+.\.venv\Scripts\python -m pytest                   # tests
+.\.venv\Scripts\pyinstaller packaging\SoloRamzaManager.spec --noconfirm --clean   # builds dist\SoloRamzaManager\
 ```
 
-Estrutura:
-- `ramza_manager/mod_builder.py`: calcula e gera o mod (JobData/JobCommandData/AbilityData/SpawnData XML + ModConfig).
-- `ramza_manager/nxd_db.py`: extrai as tabelas nex (`ability`, `job`, `jobcommand`) do jogo para SQLite e gera os `.nxd` editados (custo de JP e nome da classe).
-- `ramza_manager/class_catalog.py`: quais classes aparecem e em que aba.
-- `ramza_manager/custom_class.py`: formato `.ramzaclass.json`, validação e biblioteca de classes customizadas.
-- `ramza_manager/class_editor.py`: editor de classe customizada (PySide6).
-- `ramza_manager/app.py`: interface (PySide6).
-- `data/`: tabelas XML de referência do jogo original.
+Release builds take a few extra steps to keep antivirus false positives and Nexus Mods quarantine away:
+
+- **Build from PowerShell, not Git Bash.** Git Bash puts `C:\Program Files\Git\mingw64\bin` on the PATH, and PyInstaller then bundles Git's OpenSSL DLLs (`libcrypto-3-x64.dll`, `libssl-3-x64.dll`) next to Python's.
+- **Compile PyInstaller's bootloader from source** instead of using the prebuilt one from PyPI, which many antivirus heuristics flag. With a portable [MinGW-w64](https://winlibs.com/) on the PATH:
+
+  ```powershell
+  $venv = (Resolve-Path .venv).Path
+  & $venv\Scripts\pip download --no-binary :all: --no-deps pyinstaller==6.22.3 -d $env:TEMP
+  tar xzf $env:TEMP\pyinstaller-6.22.3.tar.gz -C $env:TEMP
+  Push-Location $env:TEMP\pyinstaller-6.22.3\bootloader
+  & $venv\Scripts\python ./waf distclean all --target-arch=64bit --gcc
+  cd ..; & $venv\Scripts\pip install --force-reinstall --no-deps .
+  Pop-Location
+  ```
+
+  Recreating the venv with a plain `pip install pyinstaller` brings the prebuilt bootloader back.
+- The spec builds with `noarchive=True`, so there's no `base_library.zip` inside the package (Nexus Mods rejects archives nested in an upload), and it stamps the `.exe` with version info taken from `ramza_manager/__init__.py`.
+
+Layout:
+- `ramza_manager/app.py`: main window (PySide6).
+- `ramza_manager/wizard.py`: first-run setup wizard.
+- `ramza_manager/theme.py`: the *Ivalice Chronicles*-style menu theme.
+- `ramza_manager/i18n.py`: Portuguese and English UI strings.
+- `ramza_manager/mod_builder.py`: computes and generates the mod (JobData/JobCommandData/AbilityData/SpawnData XML + ModConfig).
+- `ramza_manager/nxd_db.py`: extracts the game's nex tables (`ability`, `job`, `jobcommand`) to SQLite and generates the edited `.nxd` files (class name and skillset).
+- `ramza_manager/sprites.py`: battle sprite, `CharCLUT` colors and portrait swap.
+- `ramza_manager/save_edit.py`: reads and writes Ramza's JP, Bravery, Faith and the inventory in the save (`enhanced.png`); the `fftsave.bin` layout is documented at the top.
+- `ramza_manager/stat_sim.py`: stat-by-level simulator.
+- `ramza_manager/class_catalog.py`: which classes are listed and under which tab.
+- `ramza_manager/custom_class.py`: `.ramzaclass.json` format, validation and custom class library.
+- `ramza_manager/class_editor.py`: custom class editor (PySide6).
+- `ramza_manager/ff16tools.py`, `reloaded.py`, `game_install.py`, `prereqs.py`: FF16Tools wrapper, Reloaded-II profile, game detection and prerequisite checks.
+- `data/`: reference XML tables from the original game, plus the built-in classes in `data/classes/`.
+- `biblioteca_classes/`: extra classes to import.
 - `tools/FF16Tools/`: FF16Tools.CLI (Nenkai, MIT).
 
-Os dados extraídos e as configurações ficam em `%LOCALAPPDATA%\SoloRamzaManager`.
+Extracted data, settings, the class library and save backups live in `%LOCALAPPDATA%\SoloRamzaManager`.
 
-## Créditos e licença
+See `CHANGELOG.md` for version history.
 
-- Partes do código e as tabelas de referência vêm do **The Ivalice Chronicles Mod Studio** (GPL-3). Por isso este projeto também é **GPL-3** (ver `LICENSE`).
-- **FF16Tools** e **fftivc.utility.modloader**, por Nenkai.
-- **Reloaded-II**, por Sewer56.
+## Credits and license
+
+- Parts of the code and the reference tables come from **The Ivalice Chronicles Mod Studio** (GPL-3). Because of that, this project is also **GPL-3** (see `LICENSE`).
+- **FF16Tools** and **fftivc.utility.modloader**, by Nenkai.
+- **Reloaded-II**, by Sewer56.

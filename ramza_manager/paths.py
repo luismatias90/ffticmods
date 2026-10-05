@@ -67,3 +67,8 @@ def classes_dir() -> Path:
     d = user_data_dir() / "classes"
     d.mkdir(parents=True, exist_ok=True)
     return d
+
+
+def save_backups_dir() -> Path:
+    """Cópias dos saves antes de cada edição."""
+    return user_data_dir() / "save_backups"

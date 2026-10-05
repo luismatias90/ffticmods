@@ -1,6 +1,6 @@
 """
 Wrapper do FF16Tools.CLI (Nenkai, MIT): extrair .nxd dos .pac e converter
-.nxd <-> SQLite.
+.nxd <-> SQLite, abrir/fechar saves (.png).
 
 Comandos adaptados de mod_studio/ff16tools.py (The Ivalice Chronicles Mod Studio, GPL-3).
 """
@@ -36,3 +36,14 @@ def sqlite_to_nxd(cli: Path, sqlite_path: Path, output_dir: Path, tables: list[s
     if tables:
         command += ["-t", *tables]
     return run_streaming(command, line_cb)
+
+
+def unpack_save(cli: Path, save_png: Path, output_dir: Path, line_cb: LineCb = None) -> int:
+    return run_streaming([str(cli), "unpack-save", "-i", str(save_png), "-o", str(output_dir)], line_cb)
+
+
+def pack_save(cli: Path, input_dir: Path, save_png: Path, line_cb: LineCb = None) -> int:
+    return run_streaming(
+        [str(cli), "pack-save", "-i", str(input_dir), "-o", str(save_png), "-g", "fft", "-s"],
+        line_cb,
+    )

@@ -97,12 +97,12 @@ def test_apply_edits_touches_only_selected_rows(tmp_path):
     db = tmp_path / "t.sqlite"
     _fake_db(db)
     con = sqlite3.connect(str(db))
-    changed = nxd_db.apply_class_edits(con, [155, 156], 0, 30, (1, 2, 3))
+    changed = nxd_db.apply_class_edits(con, 30, (1, 2, 3))
     con.commit()
     con.close()
-    assert set(changed) == {"Ability-en", "Job-en", "Ability-ja", "Job-ja"}
-    costs = nxd_db.read_jp_costs(db)
-    assert costs == {155: 0, 156: 0, 1: 50}
+    assert set(changed) == {"Job-en", "Job-ja"}
+    # As skills mantêm o custo de JP original.
+    assert nxd_db.read_jp_costs(db) == {155: 100, 156: 400, 1: 50}
     con = sqlite3.connect(str(db))
     rows = con.execute('SELECT Key, Name, "jobcommand+Id", TexturePartsIndex FROM "Job-en" ORDER BY Key').fetchall()
     assert rows[:3] == [(1, "Holy Knight", 40, 21), (2, "Holy Knight", 40, 21), (3, "Holy Knight", 40, 21)]
@@ -112,14 +112,10 @@ def test_apply_edits_touches_only_selected_rows(tmp_path):
     con.close()
 
 
-def test_jp_cost_split_into_two_bytes(tmp_path):
+def test_jp_cost_read_from_two_bytes(tmp_path):
     db = tmp_path / "t.sqlite"
     _fake_db(db)
-    con = sqlite3.connect(str(db))
-    nxd_db.apply_class_edits(con, [155], 300, 30, (1,))
-    con.commit()
-    con.close()
-    assert nxd_db.read_jp_costs(db)[155] == 300
+    assert nxd_db.read_jp_costs(db)[156] == 144 + 256
 
 
 def test_mod_folder_layout(tables, tmp_path):
@@ -138,84 +134,6 @@ def test_mod_folder_layout(tables, tmp_path):
     assert mod_builder.read_installed_class(mods) == "Black Mage"
     assert mod_builder.uninstall_mod(mods)
     assert mod_builder.read_installed_class(mods) is None
-
-
-def _fake_bonus_db(path):
-    con = sqlite3.connect(str(path))
-    con.execute('CREATE TABLE "SystemBonusItemContents" (Key INTEGER, Key2 INTEGER, DLCFlags INTEGER, UnionId TEXT)')
-    con.executemany('INSERT INTO "SystemBonusItemContents" VALUES (?,?,?,?)', [
-        (1, 0, 0, "Item:2"), (1, 1, 0, "SystemBonusSpecialItem:5"),
-        (2, 0, 0, "Item:257"), (2, 1, 0, "SystemBonusSpecialItem:3"),
-        (2, 2, 0, "SystemBonusSpecialItem:2"), (2, 3, 0, "SystemBonusSpecialItem:1"),
-    ])
-    for lang in ("en", "ja"):
-        con.execute(f'CREATE TABLE "SystemBonusSpecialItem-{lang}" (Key INTEGER, DLCFlags INTEGER, Comment TEXT, '
-                    'UnionId TEXT, Quantity INTEGER, Caption TEXT)')
-        con.executemany(f'INSERT INTO "SystemBonusSpecialItem-{lang}" VALUES (?,?,?,?,?,?)', [
-            (1, 0, None, "120:25", 1, "Red Equipment for Ramza"),
-            (2, 0, None, "120:26", 1, "Black Equipment for Ramza"),
-            (3, 0, None, "Item:253", 10, "10 Tufts of Phoenix Down"),
-            (5, 0, None, "Item:241", 10, "10 High Potions"),
-        ])
-        con.execute(f'CREATE TABLE "SystemBonusItem-{lang}" (Key INTEGER, DLCFlags INTEGER, Title TEXT, '
-                    'Description TEXT, UnionId TEXT, Comment TEXT)')
-        con.execute(f'INSERT INTO "SystemBonusItem-{lang}" VALUES (2, 0, "Deluxe", "old", "SystemBonusEntitlement:2", NULL)')
-        con.execute(f'CREATE TABLE "Item-{lang}" (Key INTEGER, Name TEXT, NameSingular TEXT)')
-        con.executemany(f'INSERT INTO "Item-{lang}" VALUES (?,?,?)',
-                        [(240, "Elixir" if lang == "en" else None, None if lang == "en" else "エリクサー"),
-                         (19, "Broadsword", "Broadsword")])
-    con.commit()
-    con.close()
-
-
-def test_read_bonus_items(tmp_path):
-    db = tmp_path / "b.sqlite"
-    _fake_bonus_db(db)
-    items = nxd_db.read_bonus_items(db)
-    assert [(b.item_id, b.quantity) for b in items] == [(257, 1), (253, 10)]
-
-
-def test_bag_replaces_deluxe_contents_and_keeps_colors(tmp_path):
-    db = tmp_path / "b.sqlite"
-    _fake_bonus_db(db)
-    con = sqlite3.connect(str(db))
-    bag = [nxd_db.BagItem(240, 20), nxd_db.BagItem(19, 1), nxd_db.BagItem(241, 5)]
-    changed = nxd_db.apply_bag_edits(con, bag, {241: "X-Potion"})
-    con.commit()
-    assert "SystemBonusItemContents" in changed and "SystemBonusSpecialItem-ja" in changed
-    rows = con.execute('SELECT Key, Key2, UnionId FROM "SystemBonusItemContents" ORDER BY rowid').fetchall()
-    assert rows == [
-        (1, 0, "Item:2"), (1, 1, "SystemBonusSpecialItem:5"),  # pré-venda intocado
-        (2, 0, "SystemBonusSpecialItem:3"),  # 1ª quantidade reaproveita a linha original
-        (2, 1, "Item:19"),                   # avulso entra direto, como os itens da Deluxe
-        (2, 2, "SystemBonusSpecialItem:6"),  # quantidade extra: próxima chave em sequência
-        (2, 3, "SystemBonusSpecialItem:2"), (2, 4, "SystemBonusSpecialItem:1"),  # cores mantidas
-    ]
-    special = con.execute('SELECT Key, UnionId, Quantity, Caption FROM "SystemBonusSpecialItem-en" ORDER BY rowid').fetchall()
-    assert special == [
-        (1, "120:25", 1, "Red Equipment for Ramza"), (2, "120:26", 1, "Black Equipment for Ramza"),
-        (3, "Item:240", 20, "Elixir × 20"), (5, "Item:241", 10, "10 High Potions"),
-        (6, "Item:241", 5, "X-Potion × 5"),
-    ]
-    ja = con.execute('SELECT Caption FROM "SystemBonusSpecialItem-ja" WHERE Key = 3').fetchone()[0]
-    assert ja == "エリクサー × 20"  # nome do idioma, via NameSingular
-    desc = con.execute('SELECT Description FROM "SystemBonusItem-en" WHERE Key = 2').fetchone()[0]
-    assert desc.splitlines() == ["- Elixir × 20", "- Broadsword", "- X-Potion × 5",
-                                 "- Black Equipment for Ramza", "- Red Equipment for Ramza"]
-    con.close()
-    assert [(b.item_id, b.quantity) for b in nxd_db.read_bonus_items(db)] == [(240, 20), (19, 1), (241, 5)]
-
-
-def test_single_items_need_no_new_special_rows(tmp_path):
-    db = tmp_path / "b.sqlite"
-    _fake_bonus_db(db)
-    con = sqlite3.connect(str(db))
-    changed = nxd_db.apply_bag_edits(con, [nxd_db.BagItem(19, 1)], {})
-    con.commit()
-    assert not any(t.startswith("SystemBonusSpecialItem") for t in changed)
-    keys = [k for (k,) in con.execute('SELECT Key FROM "SystemBonusSpecialItem-en"')]
-    assert keys == [1, 2, 3, 5]
-    con.close()
 
 
 def test_sprite_catalog_is_human_sheets_only():
@@ -296,14 +214,3 @@ def test_ramza_clut_rows_get_the_sheet_palette():
     rows = dict(((k, k2), d) for k, k2, d in con.execute('SELECT * FROM "CharCLUT"'))
     assert json.loads(rows[(3, 1)]) == clut
     assert rows[(254, 0)] == "old"
-
-
-def test_bag_only_plan_does_not_touch_class(tables, tmp_path):
-    bag = [nxd_db.BagItem(240, 150), nxd_db.BagItem(240, 5), nxd_db.BagItem(9999, 1)]
-    plan = mod_builder.plan_build(tables, None, None, bag)
-    assert plan.job_xml is None and plan.source_job is None
-    assert [(b.item_id, b.quantity) for b in plan.bag] == [(240, 99)]  # somado, limitado, inválido fora
-    root = mod_builder.build_mod(plan, tmp_path / "stage")
-    assert not (root / "FFTIVC" / "tables").exists()
-    config = json.loads((root / "ModConfig.json").read_text(encoding="utf-8"))
-    assert config["PluginData"]["SoloRamzaManager"]["BagItems"] == [[240, 99]]

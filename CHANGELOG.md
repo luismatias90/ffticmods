@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.6.0 — 2026-10-05
+
+### Português
+
+**JP pelo save, não mais custo 0**
+
+- As skills voltam a custar o JP normal do jogo. Antes o custo 0 valia para qualquer unidade com essas skills; agora nenhuma outra unidade é afetada.
+- O seletor *Custo de JP das skills* saiu. A prévia da classe mostra o custo de cada skill e o total para aprender tudo, e avisa quando passa de 9999.
+
+**Simulador de atributos por nível**
+
+- A prévia da classe tem um campo *Simular atributos no nível*: digite o nível (1–99) e a tabela de atributos mostra o HP, MP, Speed, PA e MA que o Ramza teria, calculados pelo multiplicador e pelo crescimento da classe. HP/MP aparecem como faixa, porque o valor inicial é sorteado.
+
+**Aba Save do jogo**
+
+- Nova aba (`Ctrl+4`) que edita o Ramza num save manual: JP da classe dele (até 9999), Bravura e Fé (0–100).
+- Acha o `enhanced.png` sozinho, lista os slots com nível, JP, Bravura e Fé, e grava com o FF16Tools.
+- Guarda uma cópia do save em `%LOCALAPPDATA%\SoloRamzaManager\save_backups` antes de cada gravação, confere o resultado antes de substituir o original e mantém a miniatura.
+- Não grava com o jogo aberto, porque ele regravaria o save ao sair.
+
+**Itens iniciais pelo save, não mais pelo bônus Deluxe**
+
+- Os itens da aba **Itens iniciais** são somados ao inventário do slot ao gravar o save, até 99 de cada. Funciona em qualquer edição e em qualquer save, não só em jogo novo na Deluxe.
+- O mod não mexe mais no pacote de bônus da Deluxe Edition (`systembonus*.nxd`), e o botão **Padrão da Deluxe** saiu.
+
+### English
+
+**JP from the save, no more 0 cost**
+
+- Skills cost the game's normal JP again. The 0 cost used to apply to any unit with those skills; now no other unit is affected.
+- The *Skill JP cost* selector is gone. The class preview shows each skill's cost and the total to learn everything, and warns when it goes over 9999.
+
+**Stat simulator by level**
+
+- The class preview has a *Simulate stats at level* field: type a level (1–99) and the stats table shows the HP, MP, Speed, PA and MA Ramza would have, computed from the class multiplier and growth. HP/MP show a range because the starting value is random.
+
+**Game save tab**
+
+- New tab (`Ctrl+4`) that edits Ramza in a manual save: his class JP (up to 9999), Bravery and Faith (0–100).
+- Finds `enhanced.png` on its own, lists the slots with level, JP, Bravery and Faith, and writes through FF16Tools.
+- Keeps a copy of the save in `%LOCALAPPDATA%\SoloRamzaManager\save_backups` before each write, checks the result before replacing the original, and keeps the thumbnail.
+- Won't write while the game is open, since it would rewrite the save on exit.
+
+**Starting items through the save, no more Deluxe bonus**
+
+- Items from the **Starting items** tab are added to the slot's inventory when writing the save, up to 99 of each. Works with any edition and any save, not just a new game on the Deluxe.
+- The mod no longer touches the Deluxe Edition bonus pack (`systembonus*.nxd`), and the **Deluxe default** button is gone.
+
 ## 0.5.0 — 2026-10-02
 
 ### Português

@@ -20,13 +20,13 @@ from PySide6.QtWidgets import (
 
 from . import (
     __version__, class_catalog, custom_class, game_install, i18n, mod_builder, nxd_db, paths, prereqs, reloaded,
-    sprites, theme,
+    save_edit, sprites, stat_sim, theme,
 )
 from .class_catalog import ClassOption
 from .sprites import SpriteOption
 from .class_editor import CustomClassDialog
 from .custom_class import CustomClass, CustomClassError
-from .nxd_db import MAX_QUANTITY, BagItem
+from .save_edit import MAX_QUANTITY, BagItem
 from .settings import Settings
 from .tables import Job, ReferenceTables, load_reference_tables
 from .wizard import SetupWizard
@@ -127,8 +127,8 @@ class MainWindow(QMainWindow):
         self.command_names: dict[int, str] = {}
         self.item_names: dict[int, str] = {}
         self.jp_costs: dict[int, int] = {}
-        self.deluxe_default: list[BagItem] = []
         self.bag: list[BagItem] = [BagItem(int(i), int(q)) for i, q in self.settings.bag_items]
+        self._save_slots: Optional[list[save_edit.SlotInfo]] = None  # None = save ainda não lido
         self._thread: Optional[QThread] = None
         self._worker: Optional[Worker] = None
         self._on_done: Callable[[object], None] = lambda _r: None
@@ -151,6 +151,7 @@ class MainWindow(QMainWindow):
         self.pages.addWidget(self._build_class_tab())
         self.pages.addWidget(self._build_sprite_tab())
         self.pages.addWidget(self._build_bag_tab())
+        self.pages.addWidget(self._build_save_tab())
         body.addWidget(self._build_sidebar())
         body.addWidget(self.pages, 1)
         root.addLayout(body, 1)
@@ -175,7 +176,7 @@ class MainWindow(QMainWindow):
 
         QShortcut(QKeySequence.Find, self, self._focus_search)
         QShortcut(QKeySequence.New, self, self.new_custom)
-        for index in range(3):
+        for index in range(len(self.nav_buttons)):
             QShortcut(QKeySequence(f"Ctrl+{index + 1}"), self, lambda i=index: self._go_page(i))
         for keys in ("Ctrl+Return", "Ctrl+Enter"):
             QShortcut(QKeySequence(keys), self, self.apply_mod)
@@ -196,8 +197,16 @@ class MainWindow(QMainWindow):
         self.nav_class = NavButton("1")
         self.nav_sprite = NavButton("2")
         self.nav_bag = NavButton("3")
-        for index, btn in enumerate((self.nav_class, self.nav_sprite, self.nav_bag)):
+        self.nav_save = NavButton("4")
+        self.nav_buttons = (self.nav_class, self.nav_sprite, self.nav_bag, self.nav_save)
+        for index, btn in enumerate(self.nav_buttons):
             btn.clicked.connect(lambda _c=False, i=index: self._go_page(i))
+            if btn is self.nav_bag:
+                # Itens e save são gravados direto no save, fora do "Aplicar no jogo".
+                layout.addSpacing(8)
+                self.lbl_nav_save_caption = QLabel()
+                self.lbl_nav_save_caption.setObjectName("SideCaption")
+                layout.addWidget(self.lbl_nav_save_caption)
             layout.addWidget(btn)
         self.nav_class.setChecked(True)
         layout.addStretch()
@@ -226,15 +235,19 @@ class MainWindow(QMainWindow):
 
     def _go_page(self, index: int) -> None:
         self.pages.setCurrentIndex(index)
-        (self.nav_class, self.nav_sprite, self.nav_bag)[index].setChecked(True)
+        self.nav_buttons[index].setChecked(True)
+        if self.nav_buttons[index] is self.nav_save and self._save_slots is None:
+            self.load_save()
 
     def _focus_search(self) -> None:
-        box = (self.search, self.sprite_search, self.item_search)[self.pages.currentIndex()]
-        box.setFocus()
-        box.selectAll()
+        boxes = (self.search, self.sprite_search, self.item_search)
+        index = self.pages.currentIndex()
+        if index < len(boxes):
+            boxes[index].setFocus()
+            boxes[index].selectAll()
 
     @staticmethod
-    def _page_header(layout: QVBoxLayout, toggle: QCheckBox) -> tuple[QLabel, QLabel]:
+    def _page_header(layout: QVBoxLayout, toggle: Optional[QCheckBox]) -> tuple[QLabel, QLabel]:
         """Título e descrição da página, com a caixa que liga/desliga a seção à direita."""
         row = QHBoxLayout()
         texts = QVBoxLayout()
@@ -247,8 +260,9 @@ class MainWindow(QMainWindow):
         texts.addWidget(title)
         texts.addWidget(desc)
         row.addLayout(texts, 1)
-        toggle.setObjectName("SectionToggle")
-        row.addWidget(toggle, 0, Qt.AlignVCenter)
+        if toggle is not None:
+            toggle.setObjectName("SectionToggle")
+            row.addWidget(toggle, 0, Qt.AlignVCenter)
         layout.addLayout(row)
         rule = QFrame()
         rule.setObjectName("Rule")
@@ -368,14 +382,34 @@ class MainWindow(QMainWindow):
         self.lbl_installed_caption.setText(t("installed_caption"))
         self.lbl_class_title.setText(t("tab_class"))
         self.lbl_class_desc.setText(t("page_class_desc"))
+        self.lbl_sim_level.setText(t("sim_level"))
+        self.sim_level.setToolTip(t("sim_level_tip"))
         self.lbl_sprite_title.setText(t("tab_sprite"))
         self.lbl_sprite_desc.setText(t("page_sprite_desc"))
         self.lbl_bag_title.setText(t("tab_bag"))
         self.lbl_bag_desc.setText(t("page_bag_desc"))
+        self.lbl_save_title.setText(t("tab_save"))
+        self.lbl_save_desc.setText(t("page_save_desc"))
+        self.lbl_nav_save_caption.setText(t("nav_save_caption"))
+        self.save_help.setText(t("save_help"))
+        self.lbl_save_file_row.setText(f"<b>{t('save_file_row')}</b>")
+        self.btn_save_browse.setText(t("btn_browse"))
+        self.btn_save_reload.setText(t("btn_save_reload"))
+        self.lbl_save_slots.setText(t("save_slots"))
+        self.lbl_save_jp.setText(t("save_jp"))
+        self.save_jp.setToolTip(t("save_jp_tip"))
+        self.btn_save_jp_max.setText(t("btn_save_jp_max"))
+        self.lbl_save_brave.setText(t("save_brave"))
+        self.save_brave.setToolTip(t("save_brave_tip"))
+        self.lbl_save_faith.setText(t("save_faith"))
+        self.save_faith.setToolTip(t("save_faith_tip"))
+        self.btn_save_write.setText(t("btn_save_write"))
+        self._show_save_file()
+        self.fill_save_slots()
         self.btn_apply.setText(t("btn_apply"))
         self.btn_apply.setToolTip(t("apply_tip"))
         self.btn_restore.setText(t("btn_restore"))
-        for index, btn in enumerate((self.nav_class, self.nav_sprite, self.nav_bag), 1):
+        for index, btn in enumerate(self.nav_buttons, 1):
             btn.setToolTip(t("nav_tip", n=index))
         self._update_log_button()
         if self._thread is None:
@@ -398,8 +432,6 @@ class MainWindow(QMainWindow):
         self.sprite_search.setPlaceholderText(t("search_sprite"))
         self._fill_sprite_filters()
         self.fill_sprite_list()
-        self.lbl_jp.setText(t("lbl_jp"))
-        self.jp_spin.setToolTip(t("tip_jp"))
         self.search.setPlaceholderText(t("search_class"))
         self.btn_cc_new.setText(t("cc_btn_new_plus"))
         self.btn_cc_new.setToolTip(t("cc_new_tip"))
@@ -418,7 +450,6 @@ class MainWindow(QMainWindow):
         self.btn_remove.setText(t("btn_remove"))
         self.btn_remove.setToolTip(t("tip_remove"))
         self.btn_clear.setText(t("btn_clear"))
-        self.btn_deluxe.setText(t("btn_deluxe"))
         self._update_bag_caption()
         self._update_nav()
         if hasattr(self, "_setup_all_ok"):
@@ -475,14 +506,6 @@ class MainWindow(QMainWindow):
         self.search.setClearButtonEnabled(True)
         self.search.textChanged.connect(self.fill_lists)
         tools.addWidget(self.search, 1)
-        tools.addSpacing(12)
-        self.lbl_jp = QLabel()
-        tools.addWidget(self.lbl_jp)
-        self.jp_spin = QSpinBox()
-        self.jp_spin.setRange(0, 9999)
-        self.jp_spin.setValue(self.settings.jp_cost)
-        self.jp_spin.valueChanged.connect(self._jp_changed)
-        tools.addWidget(self.jp_spin)
         tools.addSpacing(12)
         self.btn_cc_new = QPushButton()
         self.btn_cc_new.setObjectName("Accent")
@@ -560,6 +583,16 @@ class MainWindow(QMainWindow):
         bar.addWidget(self.btn_cc_delete)
         self.class_actions.hide()
         layout.addWidget(self.class_actions)
+        level_row = QHBoxLayout()
+        self.lbl_sim_level = QLabel()
+        self.sim_level = QSpinBox()
+        self.sim_level.setRange(stat_sim.MIN_LEVEL, stat_sim.MAX_LEVEL)
+        self.sim_level.setValue(stat_sim.MAX_LEVEL)
+        self.sim_level.valueChanged.connect(self._sim_level_changed)
+        level_row.addWidget(self.lbl_sim_level)
+        level_row.addWidget(self.sim_level)
+        level_row.addStretch()
+        layout.addLayout(level_row)
         self.preview = QTextBrowser()
         layout.addWidget(self.preview, 1)
         return panel
@@ -719,11 +752,8 @@ class MainWindow(QMainWindow):
         self.btn_clear = QPushButton()
         self.btn_clear.setObjectName("Danger")
         self.btn_clear.clicked.connect(self.clear_bag)
-        self.btn_deluxe = QPushButton()
-        self.btn_deluxe.clicked.connect(self.reset_bag_to_deluxe)
         buttons.addWidget(self.btn_remove)
         buttons.addStretch()
-        buttons.addWidget(self.btn_deluxe)
         buttons.addWidget(self.btn_clear)
         right_layout.addLayout(buttons)
         splitter.addWidget(right)
@@ -732,6 +762,79 @@ class MainWindow(QMainWindow):
         body.addWidget(splitter, 1)
         self.bag_body.setEnabled(self.settings.change_bag)
         layout.addWidget(self.bag_body, 1)
+        return page
+
+    def _build_save_tab(self) -> QFrame:
+        page = QFrame()
+        page.setObjectName("Page")
+        layout = QVBoxLayout(page)
+        layout.setContentsMargins(14, 10, 14, 12)
+        self.lbl_save_title, self.lbl_save_desc = self._page_header(layout, None)
+        self.save_help = QLabel()
+        self.save_help.setObjectName("Note")
+        self.save_help.setWordWrap(True)
+        self.save_help.setTextFormat(Qt.RichText)
+        layout.addWidget(self.save_help)
+
+        row = QHBoxLayout()
+        self.lbl_save_file_row = QLabel()
+        row.addWidget(self.lbl_save_file_row)
+        self.lbl_save_file = QLabel()
+        self.lbl_save_file.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        row.addWidget(self.lbl_save_file, 1)
+        self.btn_save_browse = QPushButton()
+        self.btn_save_browse.clicked.connect(self.browse_save)
+        row.addWidget(self.btn_save_browse)
+        self.btn_save_reload = QPushButton()
+        self.btn_save_reload.clicked.connect(self.load_save)
+        row.addWidget(self.btn_save_reload)
+        layout.addLayout(row)
+
+        splitter = QSplitter(Qt.Horizontal)
+        splitter.setHandleWidth(14)
+        left = QWidget()
+        left_layout = QVBoxLayout(left)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        self.lbl_save_slots = QLabel()
+        self.lbl_save_slots.setObjectName("ColumnTitle")
+        left_layout.addWidget(self.lbl_save_slots)
+        self.save_list = QListWidget()
+        self.save_list.currentItemChanged.connect(self._save_slot_selected)
+        left_layout.addWidget(self.save_list, 1)
+        splitter.addWidget(left)
+
+        right = QWidget()
+        form = QGridLayout(right)
+        form.setContentsMargins(0, 0, 0, 0)
+        self.lbl_save_ramza = QLabel()
+        self.lbl_save_ramza.setObjectName("ColumnTitle")
+        self.lbl_save_ramza.setWordWrap(True)
+        form.addWidget(self.lbl_save_ramza, 0, 0, 1, 3)
+        self.lbl_save_jp, self.lbl_save_brave, self.lbl_save_faith = QLabel(), QLabel(), QLabel()
+        self.save_jp, self.save_brave, self.save_faith = QSpinBox(), QSpinBox(), QSpinBox()
+        self.save_jp.setRange(0, save_edit.MAX_JP)
+        for spin in (self.save_brave, self.save_faith):
+            spin.setRange(0, save_edit.MAX_STAT)
+        self.btn_save_jp_max = QPushButton()
+        self.btn_save_jp_max.clicked.connect(lambda: self.save_jp.setValue(save_edit.MAX_JP))
+        fields = ((self.lbl_save_jp, self.save_jp), (self.lbl_save_brave, self.save_brave),
+                  (self.lbl_save_faith, self.save_faith))
+        for r, (label, spin) in enumerate(fields, 1):
+            form.addWidget(label, r, 0)
+            form.addWidget(spin, r, 1)
+        form.addWidget(self.btn_save_jp_max, 1, 2, Qt.AlignLeft)
+        self.lbl_save_items = QLabel()
+        self.lbl_save_items.setWordWrap(True)
+        form.addWidget(self.lbl_save_items, 4, 0, 1, 3)
+        self.btn_save_write = QPushButton()
+        self.btn_save_write.setObjectName("Primary")
+        self.btn_save_write.clicked.connect(self.write_save)
+        form.addWidget(self.btn_save_write, 5, 0, 1, 3)
+        form.setRowStretch(6, 1)
+        form.setColumnStretch(2, 1)
+        splitter.addWidget(right)
+        splitter.setSizes([460, 500])
+        layout.addWidget(splitter, 1)
         return page
 
     # -------------------------------------------------------------- helpers
@@ -754,11 +857,6 @@ class MainWindow(QMainWindow):
 
     def _update_log_button(self) -> None:
         self.btn_log.setText(i18n.t("btn_log_hide") if self.log_box.isVisible() else i18n.t("btn_log_show"))
-
-    def _jp_changed(self, value: int) -> None:
-        self.settings.jp_cost = value
-        self.settings.save()
-        self.show_preview()
 
     def _class_toggled(self, checked: bool) -> None:
         self.settings.change_class = checked
@@ -797,7 +895,15 @@ class MainWindow(QMainWindow):
             bag_text, bag_on = t("nav_off"), False
         else:
             bag_text, bag_on = t("nav_bag_n", n=len(self.bag)), bool(self.bag)
+        if hasattr(self, "lbl_save_items"):
+            self._update_save_items()
         self.nav_bag.set_texts(t("tab_bag"), bag_text, bag_on)
+        slot = self.selected_save_slot()
+        if slot is not None and slot.ramza is not None:
+            save_text = t("nav_save_slot", title=slot.title or t("save_slot_n", n=slot.index + 1))
+        else:
+            save_text = t("nav_save_none")
+        self.nav_save.set_texts(t("tab_save"), save_text, False)
 
     def game_root(self) -> Optional[Path]:
         p = Path(self.settings.game_root) if self.settings.game_root else None
@@ -868,7 +974,6 @@ class MainWindow(QMainWindow):
             self.ability_names = nxd_db.read_names(db, "Ability")
             self.item_names = nxd_db.read_names(db, "Item")
             self.jp_costs = nxd_db.read_jp_costs(db)
-            self.deluxe_default = nxd_db.read_bonus_items(db)
         self.catalog = class_catalog.build_catalog(self.tables, job_names, command_names)
         self.fill_lists()
         self._select_saved_class()
@@ -883,12 +988,9 @@ class MainWindow(QMainWindow):
             self.lbl_active.setText(i18n.t("mod_none"))
             return
         klass = installed.get("ClassName") or i18n.t("mod_original_class")
-        bag = installed.get("BagItems") or []
-        bag_text = i18n.t("mod_bag_count", n=len(bag)) if bag else i18n.t("mod_bag_original")
         sprite = installed.get("SpriteName") or i18n.t("mod_sprite_original")
         self.lbl_active.setText(i18n.t(
-            "mod_active", klass=html.escape(str(klass)), sprite=html.escape(str(sprite)),
-            bag=html.escape(bag_text)))
+            "mod_active", klass=html.escape(str(klass)), sprite=html.escape(str(sprite))))
 
     # --------------------------------------------------------- class tab
 
@@ -1046,6 +1148,13 @@ class MainWindow(QMainWindow):
         self.btn_cc_delete.setEnabled(not builtin)
         self.btn_cc_delete.setToolTip(i18n.t("cc_builtin_no_delete") if builtin else "")
 
+    def _sim_level_changed(self, _level: int) -> None:
+        # Mesma classe, só muda o nível: mantém a rolagem do preview.
+        bar = self.preview.verticalScrollBar()
+        position = bar.value()
+        self.show_preview()
+        bar.setValue(position)
+
     def show_preview(self, *_args) -> None:
         self._update_class_actions()
         self._update_nav()
@@ -1106,7 +1215,6 @@ class MainWindow(QMainWindow):
 
     def _render_preview(self, header: list[str], job: Job, skillset_name: str, action_ids: list[int],
                         rsm_ids: list[int], plan: mod_builder.BuildPlan) -> None:
-        jp = self.jp_spin.value()
         esc = html.escape
 
         def ability_rows(ids: list[int]) -> str:
@@ -1114,16 +1222,26 @@ class MainWindow(QMainWindow):
                 return f"<i>{i18n.t('none_f')}</i>"
             rows = []
             for ab_id in ids:
-                old = self.jp_costs.get(ab_id)
-                before = f"<span class='old'>{old} →</span> " if old is not None else ""
+                cost = self.jp_costs.get(ab_id)
+                cost_text = f"{cost} JP" if cost is not None else "?"
                 rows.append(f"<tr><td>{esc(self.ability_name(ab_id))}</td>"
-                            f"<td align='right'>{before}<span class='jp'>{jp} JP</span></td></tr>")
+                            f"<td align='right'><span class='jp'>{cost_text}</span></td></tr>")
             return "<table cellspacing=4>" + "".join(rows) + "</table>"
 
         f = job.fields
+        level = self.sim_level.value()
+        simulated = stat_sim.simulate(f, level)
+
+        def sim_cell(key: str) -> str:
+            if key not in simulated:
+                return "?"
+            low, high = simulated[key]
+            return f"<b>{low}</b>" if low == high else f"<b>{low}–{high}</b>"
+
         stats = "".join(
             f"<tr><td>{label}</td><td align='right'>{f.get(key + 'Multiplier', '?')}</td>"
-            f"<td align='right'>{f.get(key + 'Growth', '?')}</td></tr>"
+            f"<td align='right'>{f.get(key + 'Growth', '?')}</td>"
+            f"<td align='right'>{sim_cell(key)}</td></tr>"
             for key, label in STAT_ROWS
         )
         innate = ", ".join(esc(self.ability_name(i)) for i in job.innate_ability_ids) or i18n.t("none_f")
@@ -1135,9 +1253,13 @@ class MainWindow(QMainWindow):
         ))
         parts.append(i18n.t("h_action") + ability_rows(action_ids))
         parts.append(i18n.t("h_rsm") + ability_rows(rsm_ids))
+        if self.jp_costs:
+            total = sum(self.jp_costs.get(i, 0) for i in (*action_ids, *rsm_ids))
+            key = "jp_total_over" if total > save_edit.MAX_JP else "jp_total"
+            parts.append(i18n.t(key, total=total, max=save_edit.MAX_JP))
         parts.append(i18n.t("innate", names=innate))
         parts.append(i18n.t("equip", names=esc(", ".join(job.equippable) or i18n.t("none_m"))))
-        parts.append(i18n.t("h_stats", rows=stats))
+        parts.append(i18n.t("h_stats", rows=stats, level=level))
         extras = [s for s in (f.get("InnateStatus"), f.get("StartingStatus")) if s and s != "None"]
         if extras:
             parts.append(i18n.t("status_line", names=esc(" / ".join(extras))))
@@ -1287,6 +1409,7 @@ class MainWindow(QMainWindow):
     def _save_bag(self) -> None:
         self.settings.bag_items = [[b.item_id, b.quantity] for b in self.bag]
         self.settings.save()
+        self._update_nav()
 
     def _set_quantity(self, row: int, value: int) -> None:
         if 0 <= row < len(self.bag):
@@ -1320,11 +1443,6 @@ class MainWindow(QMainWindow):
         self._save_bag()
         self.fill_bag_table()
 
-    def reset_bag_to_deluxe(self) -> None:
-        self.bag = [BagItem(b.item_id, b.quantity) for b in self.deluxe_default]
-        self._save_bag()
-        self.fill_bag_table()
-
     # ------------------------------------------------------------- actions
 
     def browse_game(self) -> None:
@@ -1346,6 +1464,156 @@ class MainWindow(QMainWindow):
             self.settings.reloaded_root = folder
             self.settings.save()
             self.refresh_all()
+
+    # ------------------------------------------------------------ save tab
+
+    def save_file(self) -> Optional[Path]:
+        chosen = Path(self.settings.save_file) if self.settings.save_file else None
+        if chosen and chosen.is_file():
+            return chosen
+        found = save_edit.find_save_files()
+        return found[0] if found else None
+
+    def _show_save_file(self) -> None:
+        path = self.save_file()
+        self.lbl_save_file.setText(self._status(bool(path), str(path) if path else i18n.t("save_not_found")))
+
+    def browse_save(self) -> None:
+        start = str(self.save_file() or "")
+        name, _ = QFileDialog.getOpenFileName(self, i18n.t("dlg_save_file"), start, f"{save_edit.SAVE_FILE} (*.png)")
+        if name:
+            self.settings.save_file = name
+            self.settings.save()
+            self.load_save()
+
+    def load_save(self) -> None:
+        self._show_save_file()
+        path = self.save_file()
+        if path is None:
+            self._save_slots = []
+            self.fill_save_slots()
+            return
+        if not prereqs.dotnet9_installed():
+            QMessageBox.warning(self, i18n.t("dlg_dotnet_title"), i18n.t("dlg_dotnet_body"))
+            return
+
+        def work(_log):
+            return save_edit.read_save(paths.ff16tools_cli(), path, paths.cache_dir() / "save_work")
+
+        def done(slots) -> None:
+            self._save_slots = slots
+            self.fill_save_slots()
+            self.log(i18n.t("log_save_read", n=len(slots), name=path.name))
+
+        self._run(work, done, i18n.t("log_save_reading"))
+
+    def fill_save_slots(self, select: Optional[int] = None) -> None:
+        if select is None:
+            current = self.selected_save_slot()
+            select = current.index if current else None
+        self.save_list.blockSignals(True)
+        self.save_list.clear()
+        restore = None
+        for slot in self._save_slots or []:
+            title = slot.title or i18n.t("save_slot_n", n=slot.index + 1)
+            if slot.ramza:
+                r = slot.ramza
+                text = i18n.t("save_slot_line", title=title, level=r.level, jp=r.jp, brave=r.brave, faith=r.faith)
+            else:
+                text = i18n.t("save_slot_no_ramza", title=title)
+            if slot.saved_at:
+                text += f"\n{slot.saved_at:%Y-%m-%d %H:%M}"
+            item = QListWidgetItem(text)
+            item.setData(Qt.UserRole, slot.index)
+            if slot.ramza is None:
+                item.setFlags(Qt.NoItemFlags)
+            self.save_list.addItem(item)
+            if slot.index == select and slot.ramza:
+                restore = item
+        if self._save_slots is not None and not self._save_slots:
+            empty = QListWidgetItem(i18n.t("save_no_slots"))
+            empty.setFlags(Qt.NoItemFlags)
+            self.save_list.addItem(empty)
+        if restore is None:
+            restore = next((self.save_list.item(i) for i in range(self.save_list.count())
+                            if self.save_list.item(i).flags() & Qt.ItemIsEnabled), None)
+        if restore is not None:
+            self.save_list.setCurrentItem(restore)
+        self.save_list.blockSignals(False)
+        self._save_slot_selected()
+
+    def save_items(self) -> list[BagItem]:
+        """Itens da aba 'Itens iniciais' que entram no próximo 'Gravar no save'."""
+        if not self.chk_bag.isChecked():
+            return []
+        return save_edit.merge_items(self.bag, self.tables.items)
+
+    def _update_save_items(self) -> None:
+        items = self.save_items()
+        if items:
+            self.lbl_save_items.setText(i18n.t("save_items_n", n=len(items)))
+        else:
+            self.lbl_save_items.setText(i18n.t("save_items_none"))
+
+    def selected_save_slot(self) -> Optional[save_edit.SlotInfo]:
+        item = self.save_list.currentItem() if hasattr(self, "save_list") else None
+        index = item.data(Qt.UserRole) if item is not None else None
+        return next((s for s in self._save_slots or [] if s.index == index), None)
+
+    def _save_slot_selected(self, *_args) -> None:
+        slot = self.selected_save_slot()
+        ramza = slot.ramza if slot else None
+        for widget in (self.save_jp, self.save_brave, self.save_faith, self.btn_save_jp_max, self.btn_save_write):
+            widget.setEnabled(ramza is not None)
+        if ramza is None:
+            self.lbl_save_ramza.setText(i18n.t("save_pick_slot"))
+        else:
+            self.lbl_save_ramza.setText(i18n.t("save_ramza", level=ramza.level))
+            self.save_jp.setValue(ramza.jp)
+            self.save_brave.setValue(ramza.brave)
+            self.save_faith.setValue(ramza.faith)
+        self._update_nav()
+
+    def write_save(self) -> None:
+        slot = self.selected_save_slot()
+        path = self.save_file()
+        if slot is None or slot.ramza is None or path is None:
+            return
+        if prereqs.game_running():
+            QMessageBox.warning(self, i18n.t("close_game_title"), i18n.t("close_game_body"))
+            return
+        jp, brave, faith = self.save_jp.value(), self.save_brave.value(), self.save_faith.value()
+        items = self.save_items()
+        title = slot.title or i18n.t("save_slot_n", n=slot.index + 1)
+        if items:
+            lines = []
+            for entry in items:
+                have = slot.inventory[entry.item_id] if entry.item_id < len(slot.inventory) else 0
+                total = max(have, min(MAX_QUANTITY, have + entry.quantity))
+                lines.append(f"  {self.item_name(entry.item_id)}: {have} → {total}")
+            items_text = i18n.t("save_confirm_items", items="\n".join(lines))
+        else:
+            items_text = ""
+        answer = QMessageBox.question(
+            self, i18n.t("save_confirm_title"),
+            i18n.t("save_confirm_body", title=title, jp=jp, brave=brave, faith=faith, items=items_text))
+        if answer != QMessageBox.Yes:
+            return
+        cli, work_dir = paths.ff16tools_cli(), paths.cache_dir() / "save_work"
+
+        def work(_log):
+            backup = save_edit.write_slot(cli, path, work_dir, paths.save_backups_dir(),
+                                          slot.index, jp, brave, faith, items)
+            return backup, save_edit.read_save(cli, path, work_dir)
+
+        def done(result) -> None:
+            backup, slots = result
+            self._save_slots = slots
+            self.fill_save_slots(select=slot.index)
+            self.log(i18n.t("log_save_written", title=title, backup=backup))
+            QMessageBox.information(self, i18n.t("save_done_title"), i18n.t("save_done_body", backup=backup))
+
+        self._run(work, done, i18n.t("log_save_writing"))
 
     def _run(self, fn, on_done, busy_text: str) -> None:
         if self._thread is not None:
@@ -1434,15 +1702,11 @@ class MainWindow(QMainWindow):
             if option is None and custom is None:
                 QMessageBox.information(self, i18n.t("pick_class_title"), i18n.t("pick_class_body"))
                 return
-        bag = list(self.bag) if self.chk_bag.isChecked() else None
-        if bag is not None and not bag:
-            QMessageBox.information(self, i18n.t("empty_bag_title"), i18n.t("empty_bag_body"))
-            return
         sprite = self.selected_sprite() if self.chk_sprite.isChecked() else None
         if self.chk_sprite.isChecked() and sprite is None:
             QMessageBox.information(self, i18n.t("pick_sprite_title"), i18n.t("pick_sprite_body"))
             return
-        if option is None and custom is None and bag is None and sprite is None:
+        if option is None and custom is None and sprite is None:
             QMessageBox.information(self, i18n.t("nothing_title"), i18n.t("nothing_body"))
             return
         rel = self._require_ready()
@@ -1466,12 +1730,10 @@ class MainWindow(QMainWindow):
             return
 
         plan = mod_builder.plan_build(
-            self.tables, option.job_id if option else None, class_name, bag, custom=custom,
+            self.tables, option.job_id if option else None, class_name, custom=custom,
             sprite_stem=sprite.stem if sprite else None,
             sprite_name=sprite.name() if sprite else None)
-        jp = self.jp_spin.value()
         db = paths.vanilla_sqlite()
-        fallback_names = {i: self.item_name(i) for i in self.tables.items}
         if option:
             self.settings.class_job_id = option.job_id
             self.settings.custom_class_file = ""
@@ -1486,12 +1748,11 @@ class MainWindow(QMainWindow):
         def nxd_builder(p, work_dir):
             class_edit = None
             if p.source_job is not None:
-                class_edit = dict(ability_ids=p.ability_ids, jp_cost=jp, source_job_id=p.source_job.id,
-                                  target_job_ids=class_catalog.RAMZA_JOB_IDS)
+                class_edit = dict(source_job_id=p.source_job.id, target_job_ids=class_catalog.RAMZA_JOB_IDS)
                 if p.custom is not None:
                     class_edit.update(custom_name=p.custom.name, custom_description=p.custom.description,
                                       skillset_name=p.custom.skillset, target_command_ids=p.ramza_command_ids)
-            return nxd_db.build_nxd_files(db, paths.ff16tools_cli(), work_dir, class_edit, p.bag, fallback_names)
+            return nxd_db.build_nxd_files(db, paths.ff16tools_cli(), work_dir, class_edit)
 
         game = self.game_root()
 
@@ -1513,8 +1774,6 @@ class MainWindow(QMainWindow):
                 lines.append(i18n.t("done_class", name=class_name))
             if plan.sprite_name:
                 lines.append(i18n.t("done_sprite", name=plan.sprite_name))
-            if plan.bag:
-                lines.append(i18n.t("done_bag", n=len(plan.bag)))
             msg = i18n.t("done_intro") + "\n\n" + "\n".join(lines) + "\n\n"
             if enabled:
                 msg += i18n.t("done_ok")

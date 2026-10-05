@@ -133,7 +133,7 @@ def test_nxd_custom_edits(tmp_path):
     db = tmp_path / "t.sqlite"
     _fake_db(db)
     con = sqlite3.connect(str(db))
-    changed = nxd_db.apply_class_edits(con, [138], 0, 76, (1, 2, 3), custom_name="Spellblade",
+    changed = nxd_db.apply_class_edits(con, 76, (1, 2, 3), custom_name="Spellblade",
                                        custom_description="Espada e magia.", skillset_name="Runeblade",
                                        target_command_ids=(25, 26, 27))
     con.commit()
@@ -145,7 +145,7 @@ def test_nxd_custom_edits(tmp_path):
         names = dict(con.execute(f'SELECT Key, Name FROM "JobCommand-{lang}"').fetchall())
         assert names == {7: "Arts of War", 25: "Runeblade", 26: "Runeblade", 27: "Runeblade"}
     con.close()
-    assert nxd_db.read_jp_costs(db) == {138: 0, 1: 50}
+    assert nxd_db.read_jp_costs(db) == {138: 100, 1: 50}
 
 
 def test_import_writes_clean_copy(tables, tmp_path):
