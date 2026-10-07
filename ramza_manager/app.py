@@ -396,6 +396,11 @@ class MainWindow(QMainWindow):
         self.btn_save_browse.setText(t("btn_browse"))
         self.btn_save_reload.setText(t("btn_save_reload"))
         self.lbl_save_slots.setText(t("save_slots"))
+        self.lbl_save_level.setText(t("save_level"))
+        self.save_level.setToolTip(t("save_level_tip"))
+        self.btn_save_level_max.setText(t("btn_save_level_max"))
+        self.chk_save_recalc.setText(t("save_recalc"))
+        self.chk_save_recalc.setToolTip(t("save_recalc_tip"))
         self.lbl_save_jp.setText(t("save_jp"))
         self.save_jp.setToolTip(t("save_jp_tip"))
         self.btn_save_jp_max.setText(t("btn_save_jp_max"))
@@ -810,6 +815,12 @@ class MainWindow(QMainWindow):
         self.lbl_save_ramza.setObjectName("ColumnTitle")
         self.lbl_save_ramza.setWordWrap(True)
         form.addWidget(self.lbl_save_ramza, 0, 0, 1, 3)
+        self.lbl_save_level = QLabel()
+        self.save_level = QSpinBox()
+        self.save_level.setRange(stat_sim.MIN_LEVEL, stat_sim.MAX_LEVEL)
+        self.save_level.valueChanged.connect(self._update_save_stats)
+        self.btn_save_level_max = QPushButton()
+        self.btn_save_level_max.clicked.connect(lambda: self.save_level.setValue(stat_sim.MAX_LEVEL))
         self.lbl_save_jp, self.lbl_save_brave, self.lbl_save_faith = QLabel(), QLabel(), QLabel()
         self.save_jp, self.save_brave, self.save_faith = QSpinBox(), QSpinBox(), QSpinBox()
         self.save_jp.setRange(0, save_edit.MAX_JP)
@@ -817,20 +828,28 @@ class MainWindow(QMainWindow):
             spin.setRange(0, save_edit.MAX_STAT)
         self.btn_save_jp_max = QPushButton()
         self.btn_save_jp_max.clicked.connect(lambda: self.save_jp.setValue(save_edit.MAX_JP))
-        fields = ((self.lbl_save_jp, self.save_jp), (self.lbl_save_brave, self.save_brave),
-                  (self.lbl_save_faith, self.save_faith))
+        fields = ((self.lbl_save_level, self.save_level), (self.lbl_save_jp, self.save_jp),
+                  (self.lbl_save_brave, self.save_brave), (self.lbl_save_faith, self.save_faith))
         for r, (label, spin) in enumerate(fields, 1):
             form.addWidget(label, r, 0)
             form.addWidget(spin, r, 1)
-        form.addWidget(self.btn_save_jp_max, 1, 2, Qt.AlignLeft)
+        form.addWidget(self.btn_save_level_max, 1, 2, Qt.AlignLeft)
+        form.addWidget(self.btn_save_jp_max, 2, 2, Qt.AlignLeft)
+        self.chk_save_recalc = QCheckBox()
+        self.chk_save_recalc.toggled.connect(self._update_save_stats)
+        form.addWidget(self.chk_save_recalc, 5, 0, 1, 3)
+        self.lbl_save_stats = QLabel()
+        self.lbl_save_stats.setWordWrap(True)
+        self.lbl_save_stats.setTextFormat(Qt.RichText)
+        form.addWidget(self.lbl_save_stats, 6, 0, 1, 3)
         self.lbl_save_items = QLabel()
         self.lbl_save_items.setWordWrap(True)
-        form.addWidget(self.lbl_save_items, 4, 0, 1, 3)
+        form.addWidget(self.lbl_save_items, 7, 0, 1, 3)
         self.btn_save_write = QPushButton()
         self.btn_save_write.setObjectName("Primary")
         self.btn_save_write.clicked.connect(self.write_save)
-        form.addWidget(self.btn_save_write, 5, 0, 1, 3)
-        form.setRowStretch(6, 1)
+        form.addWidget(self.btn_save_write, 8, 0, 1, 3)
+        form.setRowStretch(9, 1)
         form.setColumnStretch(2, 1)
         splitter.addWidget(right)
         splitter.setSizes([460, 500])
@@ -897,6 +916,7 @@ class MainWindow(QMainWindow):
             bag_text, bag_on = t("nav_bag_n", n=len(self.bag)), bool(self.bag)
         if hasattr(self, "lbl_save_items"):
             self._update_save_items()
+            self._update_save_stats()
         self.nav_bag.set_texts(t("tab_bag"), bag_text, bag_on)
         slot = self.selected_save_slot()
         if slot is not None and slot.ramza is not None:
@@ -1563,16 +1583,71 @@ class MainWindow(QMainWindow):
     def _save_slot_selected(self, *_args) -> None:
         slot = self.selected_save_slot()
         ramza = slot.ramza if slot else None
-        for widget in (self.save_jp, self.save_brave, self.save_faith, self.btn_save_jp_max, self.btn_save_write):
+        for widget in (self.save_level, self.btn_save_level_max, self.chk_save_recalc, self.save_jp,
+                       self.save_brave, self.save_faith, self.btn_save_jp_max, self.btn_save_write):
             widget.setEnabled(ramza is not None)
         if ramza is None:
             self.lbl_save_ramza.setText(i18n.t("save_pick_slot"))
         else:
             self.lbl_save_ramza.setText(i18n.t("save_ramza", level=ramza.level))
+            self.save_level.blockSignals(True)
+            self.save_level.setValue(ramza.level)
+            self.save_level.blockSignals(False)
             self.save_jp.setValue(ramza.jp)
             self.save_brave.setValue(ramza.brave)
             self.save_faith.setValue(ramza.faith)
         self._update_nav()
+
+    def save_class(self, ramza: save_edit.RamzaStats) -> tuple[str, Optional[Job]]:
+        """
+        Classe cujo Growth/Multiplier vale para o Ramza do save: a escolhida na
+        aba Classe (é a que o mod põe no lugar dos Jobs 1-3) ou, com a troca
+        desligada, o job original gravado no save.
+        """
+        if self.chk_class.isChecked():
+            selected = self.selected_custom()
+            if selected is not None and custom_class.is_valid_base_job(self.tables, selected[1].base_job):
+                return selected[1].name, selected[1].effective_job(self.tables)
+            option = self.selected_option()
+            if option is not None:
+                return option.name, option.job
+        return self.job_display_name(ramza.job), self.tables.jobs.get(ramza.job)
+
+    def _save_level_plan(self, ramza: save_edit.RamzaStats) -> tuple[str, dict[str, int], dict[str, int], bool]:
+        """(classe, growths, multipliers, recalcular desde o nível 1) da edição de nível."""
+        name, job = self.save_class(ramza)
+        fields = job.fields if job else {}
+        return name, stat_sim.growths(fields), stat_sim.multipliers(fields), self.chk_save_recalc.isChecked()
+
+    def _save_stats_lines(self, ramza: save_edit.RamzaStats) -> list[tuple[str, int, int]]:
+        """(atributo, exibido agora, exibido após a edição) com o Multiplier da classe."""
+        _name, growths, mults, recalc = self._save_level_plan(ramza)
+        level = self.save_level.value()
+        lines = []
+        for stat, _label in STAT_ROWS:
+            raw = ramza.raw.get(stat)
+            if raw is None or stat not in mults:
+                continue
+            new_raw = raw
+            if stat in growths and (level != ramza.level or recalc):
+                new_raw = stat_sim.relevel(stat, raw, growths[stat], ramza.level, level, recalc)
+            lines.append((stat, stat_sim.displayed(stat, raw, mults[stat]),
+                          stat_sim.displayed(stat, new_raw, mults[stat])))
+        return lines
+
+    def _update_save_stats(self, *_args) -> None:
+        slot = self.selected_save_slot()
+        ramza = slot.ramza if slot else None
+        if ramza is None:
+            self.lbl_save_stats.setText("")
+            return
+        name = self._save_level_plan(ramza)[0]
+        rows = "".join(
+            f"<tr><td>{stat}</td><td align='right'>{old}</td><td>&nbsp;→&nbsp;</td>"
+            f"<td align='right'><b>{new}</b></td></tr>"
+            for stat, old, new in self._save_stats_lines(ramza)
+        )
+        self.lbl_save_stats.setText(i18n.t("save_stats", job=html.escape(name), rows=rows))
 
     def write_save(self) -> None:
         slot = self.selected_save_slot()
@@ -1583,6 +1658,13 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, i18n.t("close_game_title"), i18n.t("close_game_body"))
             return
         jp, brave, faith = self.save_jp.value(), self.save_brave.value(), self.save_faith.value()
+        level = self.save_level.value()
+        job_name, growths, _mults, recalc = self._save_level_plan(slot.ramza)
+        if level != slot.ramza.level or recalc:
+            stats = "\n".join(f"  {stat}: {old} → {new}" for stat, old, new in self._save_stats_lines(slot.ramza))
+            level_text = i18n.t("save_confirm_level", old=slot.ramza.level, level=level, job=job_name, stats=stats)
+        else:
+            level_text = ""
         items = self.save_items()
         title = slot.title or i18n.t("save_slot_n", n=slot.index + 1)
         if items:
@@ -1596,14 +1678,16 @@ class MainWindow(QMainWindow):
             items_text = ""
         answer = QMessageBox.question(
             self, i18n.t("save_confirm_title"),
-            i18n.t("save_confirm_body", title=title, jp=jp, brave=brave, faith=faith, items=items_text))
+            i18n.t("save_confirm_body", title=title, level=level_text, jp=jp, brave=brave, faith=faith,
+                   items=items_text))
         if answer != QMessageBox.Yes:
             return
         cli, work_dir = paths.ff16tools_cli(), paths.cache_dir() / "save_work"
 
         def work(_log):
             backup = save_edit.write_slot(cli, path, work_dir, paths.save_backups_dir(),
-                                          slot.index, jp, brave, faith, items)
+                                          slot.index, jp, brave, faith, items,
+                                          level=level, growths=growths, from_scratch=recalc)
             return backup, save_edit.read_save(cli, path, work_dir)
 
         def done(result) -> None:

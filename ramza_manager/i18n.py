@@ -422,7 +422,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "cc_field_equip": "equipamentos",
         "wiz_checklist_title": "Situação agora",
         "tab_save": "Save do jogo",
-        "page_save_desc": "Edita um save manual: JP, Bravura e Fé do Ramza e itens no inventário.",
+        "page_save_desc": "Edita um save manual: nível, JP, Bravura e Fé do Ramza e itens no inventário.",
         "nav_save_caption": "EDITAR SAVE",
         "nav_save_slot": "{title}",
         "nav_save_none": "Gravado na hora, fora do 'Aplicar'",
@@ -431,6 +431,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "(o primeiro save aparece depois da primeira batalha). <b>Feche o jogo</b>, escolha o slot aqui "
             "e grave. O JP vai para a classe própria do Ramza, que o mod trocou pela classe escolhida: "
             "use no menu <i>Learn</i>. As skills custam o JP normal do jogo. "
+            "Ao mudar o nível, os atributos sobem ou descem com o Growth da classe escolhida na aba Classe. "
             "Os itens da aba <b>Itens iniciais</b> são somados ao inventário. "
             "O app guarda uma cópia do save antes de gravar. "
             "<i>Carregue o slot manual: o autosave/continuar não recebe a edição.</i>"
@@ -446,6 +447,23 @@ STRINGS: dict[str, dict[str, str]] = {
         "save_no_slots": "Nenhum slot salvo.",
         "save_pick_slot": "Escolha um slot.",
         "save_ramza": "Ramza — nível {level}",
+        "save_level": "Nível:",
+        "save_level_tip": (
+            "Nível do Ramza (1–99). Os atributos acompanham o Growth da classe a cada nível, "
+            "como num level up do jogo. O EXP volta a 0."
+        ),
+        "btn_save_level_max": "99",
+        "save_recalc": "Recalcular os atributos desde o nível 1",
+        "save_recalc_tip": (
+            "Desligado: parte dos atributos atuais e só aplica o Growth dos níveis ganhos ou perdidos.\n"
+            "Ligado: refaz os atributos como se o Ramza tivesse ganho todos os níveis nesta classe "
+            "(descarta o que veio de outras classes)."
+        ),
+        "save_stats": (
+            "<b>Atributos</b> <span style='color:gray'>(Growth e Multiplier de {job})</span>"
+            "<table cellspacing=2>{rows}</table>"
+        ),
+        "save_confirm_level": "Nível: {old} → {level} (Growth de {job})\n{stats}\n",
         "save_jp": "JP da classe do Ramza:",
         "save_jp_tip": "JP disponível para aprender as skills da classe do Ramza (máx. 9999).",
         "btn_save_jp_max": "9999",
@@ -459,7 +477,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "save_items_n": "Itens: {n} tipo(s) da aba 'Itens iniciais' serão somados ao inventário.",
         "save_items_none": "Itens: nenhum (monte a lista na aba 'Itens iniciais').",
         "save_confirm_body": (
-            "Gravar no slot {title}?\n\nJP: {jp}\nBravura: {brave}\nFé: {faith}\n{items}\n"
+            "Gravar no slot {title}?\n\n{level}JP: {jp}\nBravura: {brave}\nFé: {faith}\n{items}\n"
             "Uma cópia do save original fica guardada."
         ),
         "close_game_title": "Feche o jogo",
@@ -894,7 +912,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "cc_field_equip": "equipment",
         "wiz_checklist_title": "Status right now",
         "tab_save": "Game save",
-        "page_save_desc": "Edits a manual save: Ramza's JP, Bravery and Faith, and inventory items.",
+        "page_save_desc": "Edits a manual save: Ramza's level, JP, Bravery and Faith, and inventory items.",
         "nav_save_caption": "EDIT SAVE",
         "nav_save_slot": "{title}",
         "nav_save_none": "Written right away, not by 'Apply'",
@@ -903,6 +921,7 @@ STRINGS: dict[str, dict[str, str]] = {
             "(the first save shows up after the first battle). <b>Close the game</b>, pick the slot here "
             "and write. The JP goes to Ramza's own class, which the mod replaced with the chosen class: "
             "spend it in the <i>Learn</i> menu. Skills cost the game's normal JP. "
+            "Changing the level raises or lowers the stats with the Growth of the class picked on the Class tab. "
             "Items from the <b>Starting items</b> tab are added to the inventory. "
             "The app keeps a copy of the save before writing. "
             "<i>Load the manual slot: the autosave/continue doesn't get the edit.</i>"
@@ -918,6 +937,23 @@ STRINGS: dict[str, dict[str, str]] = {
         "save_no_slots": "No saved slots.",
         "save_pick_slot": "Pick a slot.",
         "save_ramza": "Ramza — level {level}",
+        "save_level": "Level:",
+        "save_level_tip": (
+            "Ramza's level (1–99). Stats follow the class Growth at each level, "
+            "like an in-game level up. EXP goes back to 0."
+        ),
+        "btn_save_level_max": "99",
+        "save_recalc": "Recalculate stats from level 1",
+        "save_recalc_tip": (
+            "Off: starts from the current stats and only applies the Growth of the levels gained or lost.\n"
+            "On: rebuilds the stats as if Ramza had gained every level in this class "
+            "(drops what came from other classes)."
+        ),
+        "save_stats": (
+            "<b>Stats</b> <span style='color:gray'>({job}'s Growth and Multiplier)</span>"
+            "<table cellspacing=2>{rows}</table>"
+        ),
+        "save_confirm_level": "Level: {old} → {level} ({job}'s Growth)\n{stats}\n",
         "save_jp": "Ramza's class JP:",
         "save_jp_tip": "JP available to learn the skills of Ramza's class (max. 9999).",
         "btn_save_jp_max": "9999",
@@ -931,7 +967,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "save_items_n": "Items: {n} kind(s) from the 'Starting items' tab will be added to the inventory.",
         "save_items_none": "Items: none (build the list on the 'Starting items' tab).",
         "save_confirm_body": (
-            "Write to slot {title}?\n\nJP: {jp}\nBravery: {brave}\nFaith: {faith}\n{items}\n"
+            "Write to slot {title}?\n\n{level}JP: {jp}\nBravery: {brave}\nFaith: {faith}\n{items}\n"
             "A copy of the original save is kept."
         ),
         "close_game_title": "Close the game",

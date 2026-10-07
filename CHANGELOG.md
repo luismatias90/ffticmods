@@ -1,5 +1,23 @@
 # Changelog
 
+## Não lançado / Unreleased
+
+### Português
+
+**Nível do Ramza pelo save**
+
+- A aba **Save do jogo** edita também o nível do Ramza (1–99). Os atributos (HP, MP, Speed, PA, MA) sobem ou descem com o Growth da classe escolhida na aba Classe, nível a nível, como num level up do jogo. O EXP volta a 0.
+- A aba mostra os atributos atuais e como ficam depois da edição, com o Multiplier da classe; a confirmação lista as mudanças.
+- *Recalcular os atributos desde o nível 1* refaz os atributos como se todos os níveis fossem ganhos na classe escolhida.
+
+### English
+
+**Ramza's level from the save**
+
+- The **Game save** tab also edits Ramza's level (1–99). Stats (HP, MP, Speed, PA, MA) rise or fall with the Growth of the class picked on the Class tab, level by level, like an in-game level up. EXP goes back to 0.
+- The tab shows the current stats and what they become after the edit, using the class Multiplier; the confirmation lists the changes.
+- *Recalculate stats from level 1* rebuilds the stats as if every level had been gained in the chosen class.
+
 ## 0.6.0 — 2026-10-05
 
 ### Português

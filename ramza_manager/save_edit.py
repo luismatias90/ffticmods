@@ -1,6 +1,6 @@
 """
-Edição dos saves manuais da versão Enhanced: JP, Bravura e Fé do Ramza e
-itens somados ao inventário.
+Edição dos saves manuais da versão Enhanced: nível (com os atributos), JP,
+Bravura e Fé do Ramza e itens somados ao inventário.
 
 O save do Steam é um PNG (`enhanced.png`) com um chunk próprio `ffTo` que
 guarda os dados criptografados. O FF16Tools.CLI (`unpack-save`/`pack-save`)
@@ -17,7 +17,9 @@ do PSX, com itens e habilidades em 16 bits):
         slot+0x44  u32 data/hora (Unix)
         slot+0x518 54 unidades, UNIT_SIZE bytes cada (Ramza é a 1ª)
           +0x00 conjunto de sprite (Ramza: 1, 2 ou 3)  +0x01 id (Ramza: 0)
-          +0x02 job  +0x1D nível  +0x1E Bravura  +0x1F Fé
+          +0x02 job  +0x1C EXP  +0x1D nível  +0x1E Bravura  +0x1F Fé
+          +0x20 HP, +0x23 MP, +0x26 Speed, +0x29 PA, +0x2C MA: valores "raw"
+                de 24 bits (ver stat_sim; o exibido sai do Multiplier da classe)
           +0x80 JP atual de cada job (u16); o índice 0 é a classe própria da
                 unidade, que no Ramza são os Jobs 1-3 trocados pelo mod.
         slot+0x83A8 inventário: 1 byte (quantidade) por id de item, 0-260.
@@ -33,11 +35,11 @@ import shutil
 import struct
 import unicodedata
 import zlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable, Mapping, Optional
 
-from . import ff16tools, i18n
+from . import ff16tools, i18n, stat_sim
 
 SAVE_FOLDER = Path("My Games") / "FINAL FANTASY TACTICS - The Ivalice Chronicles" / "Steam"
 SAVE_FILE = "enhanced.png"
@@ -58,7 +60,9 @@ MAX_QUANTITY = 99
 RAMZA_SPRITES = (1, 2, 3)
 RAMZA_UNIT_ID = 0
 
-LEVEL, BRAVE, FAITH, JP = 0x1D, 0x1E, 0x1F, 0x80
+EXP, LEVEL, BRAVE, FAITH, JP = 0x1C, 0x1D, 0x1E, 0x1F, 0x80
+RAW_STATS = {"HP": 0x20, "MP": 0x23, "Speed": 0x26, "PA": 0x29, "MA": 0x2C}
+RAW_SIZE = 3
 MAX_JP = 9999
 MAX_STAT = 100
 
@@ -81,6 +85,8 @@ class RamzaStats:
     brave: int
     faith: int
     jp: int
+    job: int = 0
+    raw: dict[str, int] = field(default_factory=dict)  # atributo -> valor raw
 
 
 @dataclass
@@ -137,6 +143,10 @@ def _ramza_offset(data: bytes, index: int) -> Optional[int]:
     return None
 
 
+def _read_raw(data: bytes, pos: int) -> int:
+    return int.from_bytes(data[pos:pos + RAW_SIZE], "little")
+
+
 def parse_slots(data: bytes) -> list[SlotInfo]:
     """Slots usados do `fftsave.bin`."""
     slots = []
@@ -157,7 +167,8 @@ def parse_slots(data: bytes) -> list[SlotInfo]:
         if offset is not None:
             ramza = RamzaStats(
                 level=data[offset + LEVEL], brave=data[offset + BRAVE], faith=data[offset + FAITH],
-                jp=struct.unpack_from("<H", data, offset + JP)[0],
+                jp=struct.unpack_from("<H", data, offset + JP)[0], job=data[offset + 2],
+                raw={stat: _read_raw(data, offset + pos) for stat, pos in RAW_STATS.items()},
             )
         inventory = slot[INVENTORY:INVENTORY + ITEM_COUNT]
         slots.append(SlotInfo(index, title, saved_at, ramza, inventory))
@@ -180,10 +191,15 @@ def merge_items(items: Iterable[BagItem], valid_ids: Optional[Iterable[int]] = N
 
 def edit_slot(
     data: bytes, index: int, jp: int, brave: int, faith: int, items: Iterable[BagItem] = (),
+    level: Optional[int] = None, growths: Mapping[str, int] = {}, from_scratch: bool = False,
 ) -> bytes:
     """
     Novo `fftsave.bin` com JP/Bravura/Fé do Ramza trocados no slot `index` e
     `items` somados ao inventário (até MAX_QUANTITY por item).
+
+    Com `level`, o Ramza vai para esse nível (EXP zerado) e cada atributo de
+    `growths` acompanha o Growth da classe (ver stat_sim.relevel);
+    `from_scratch` recalcula os atributos desde o nível 1.
     """
     base = _slot_base(index)
     if not 0 <= index < slot_count(data) or data[base:base + len(SLOT_MAGIC)] != SLOT_MAGIC:
@@ -195,6 +211,16 @@ def edit_slot(
     out[offset + BRAVE] = max(0, min(MAX_STAT, brave))
     out[offset + FAITH] = max(0, min(MAX_STAT, faith))
     struct.pack_into("<H", out, offset + JP, max(0, min(MAX_JP, jp)))
+    if level is not None:
+        old_level = out[offset + LEVEL]
+        new_level = max(stat_sim.MIN_LEVEL, min(stat_sim.MAX_LEVEL, level))
+        if new_level != old_level or from_scratch:
+            for stat, growth in growths.items():
+                pos = offset + RAW_STATS[stat]
+                raw = stat_sim.relevel(stat, _read_raw(out, pos), growth, old_level, new_level, from_scratch)
+                out[pos:pos + RAW_SIZE] = raw.to_bytes(RAW_SIZE, "little")
+            out[offset + LEVEL] = new_level
+            out[offset + EXP] = 0
     for entry in merge_items(items):
         pos = base + INVENTORY + entry.item_id
         out[pos] = max(out[pos], min(MAX_QUANTITY, out[pos] + entry.quantity))
@@ -257,6 +283,7 @@ def read_save(cli: Path, png: Path, work_dir: Path) -> list[SlotInfo]:
 def write_slot(
     cli: Path, png: Path, work_dir: Path, backup_dir: Path,
     index: int, jp: int, brave: int, faith: int, items: Iterable[BagItem] = (),
+    level: Optional[int] = None, growths: Mapping[str, int] = {}, from_scratch: bool = False,
 ) -> Path:
     """
     Grava a edição (ver edit_slot) no slot `index` de `png` e devolve o backup
@@ -264,7 +291,8 @@ def write_slot(
     antes de substituir o save.
     """
     shutil.rmtree(work_dir, ignore_errors=True)
-    edited = edit_slot(_unpack(cli, png, work_dir / "in"), index, jp, brave, faith, items)
+    edited = edit_slot(_unpack(cli, png, work_dir / "in"), index, jp, brave, faith, items,
+                       level, growths, from_scratch)
 
     stage = work_dir / "stage"
     stage.mkdir(parents=True)
