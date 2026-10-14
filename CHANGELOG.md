@@ -10,6 +10,14 @@
 - A aba mostra os atributos atuais e como ficam depois da edição, com o Multiplier da classe; a confirmação lista as mudanças.
 - *Recalcular os atributos desde o nível 1* refaz os atributos como se todos os níveis fossem ganhos na classe escolhida.
 
+**Correções**
+
+- Classes customizadas voltaram a funcionar com o FFTIVC Mod Loader 1.7.x: o `JobCommandData.xml` gerado agora traz `ExtendAbilityIdFlagBits` e `ExtendReactionSupportMovementIdFlagBits` em cada entrada. Sem eles o loader rejeitava a tabela ("Could not assign to the property 'AbilityId1'") e o Ramza ficava com o Mettle original.
+
+**Classes para importar**
+
+- **King**: Delita rei (cap. 4). Holy Knight com os atributos do job King oculto do jogo, Holy Sword + as quatro Crush e Knight Sword. Combina com o sprite *Delita rei*.
+
 ### English
 
 **Ramza's level from the save**
@@ -17,6 +25,14 @@
 - The **Game save** tab also edits Ramza's level (1–99). Stats (HP, MP, Speed, PA, MA) rise or fall with the Growth of the class picked on the Class tab, level by level, like an in-game level up. EXP goes back to 0.
 - The tab shows the current stats and what they become after the edit, using the class Multiplier; the confirmation lists the changes.
 - *Recalculate stats from level 1* rebuilds the stats as if every level had been gained in the chosen class.
+
+**Fixes**
+
+- Custom classes work again with FFTIVC Mod Loader 1.7.x: the generated `JobCommandData.xml` now includes `ExtendAbilityIdFlagBits` and `ExtendReactionSupportMovementIdFlagBits` on every entry. Without them the loader rejected the table ("Could not assign to the property 'AbilityId1'") and Ramza kept his original Mettle skillset.
+
+**Classes to import**
+
+- **King**: Delita as King (ch. 4). Holy Knight with the stats of the game's hidden King job, Holy Sword + the four Crush arts and Knight Sword. Pairs with the *King Delita* sprite.
 
 ## 0.6.0 — 2026-10-05
 

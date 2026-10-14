@@ -205,5 +205,25 @@
     "special_mechanics": false,
     "experimental": false,
     "format_version": 2
+  },
+  {
+    "file": "king.ramzaclass.json",
+    "name": "King",
+    "skillset": "Holy Sword",
+    "base_class": "Holy Knight",
+    "base_job": 5,
+    "author": "Solo Ramza Manager",
+    "tags": [
+      "físico",
+      "desafio",
+      "delita"
+    ],
+    "summary_pt": "Delita rei (cap. 4): Holy Knight com stats do job King oculto, Holy Sword + Crush da Meliadoul e Knight Sword.",
+    "description": "Delita as King of Ivalice (Chapter 4). Holy Knight stats raised to the game's hidden King job, with Holy Sword and the Crush arts. Pair with the King Delita sprite.",
+    "actions": 10,
+    "rsm": 6,
+    "special_mechanics": false,
+    "experimental": false,
+    "format_version": 2
   }
 ]

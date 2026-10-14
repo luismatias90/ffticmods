@@ -4,3 +4,5 @@ __pycache__/
 .pytest_cache/
 build/
 # dist/ é versionado de propósito: o app pronto para baixar em outro PC.
+# Os módulos do app vão como .pyc soltos em dist (noarchive=True no spec); sem esta exceção o dist versionado fica sem código.
+!dist/**/*.pyc

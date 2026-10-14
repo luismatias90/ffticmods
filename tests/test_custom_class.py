@@ -94,7 +94,24 @@ def test_plan_uses_ramza_skillsets(tables):
         rsm = [int(entry[f"ReactionSupportMovementId{i}"]) for i in range(1, 7)]
         assert actions == klass.actions + [0] * (16 - len(klass.actions))  # slots antigos zerados
         assert rsm == klass.rsm + [0] * (6 - len(klass.rsm))
+        # O modloader (>= 1.7.x) quebra ao ler a entrada se os campos de flag faltarem.
+        assert entry["ExtendAbilityIdFlagBits"] == _expected_flags(actions, "ExtendedAbility")
+        assert entry["ExtendReactionSupportMovementIdFlagBits"] == _expected_flags(rsm, "ExtendRSMId")
     assert plan.ability_ids == klass.actions + klass.rsm
+
+
+def _expected_flags(ids, prefix):
+    return ", ".join(f"{prefix}{i + 1}" for i, ab_id in enumerate(ids) if ab_id >= 256) or "0"
+
+
+def test_command_table_marks_extended_ids(tables):
+    # Ação 287 (id >= 256) no slot 2 e RSMs 442/486 nos slots 1 e 3: flags por slot.
+    klass = CustomClass(name="Ext", skillset="Ext", base_job=76, actions=[138, 287], rsm=[442, 100, 486])
+    plan = mod_builder.plan_build(tables, None, None, custom=klass)
+    entry = _entries(plan.command_xml, "JobCommand")[25]
+    assert entry["ExtendAbilityIdFlagBits"] == "ExtendedAbility2"
+    assert entry["ExtendReactionSupportMovementIdFlagBits"] == "ExtendRSMId1, ExtendRSMId3"
+    assert entry["AbilityId2"] == "287" and entry["ReactionSupportMovementId3"] == "486"
 
 
 def test_regular_plan_has_no_command_table(tables):

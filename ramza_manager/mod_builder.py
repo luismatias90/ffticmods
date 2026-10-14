@@ -119,15 +119,32 @@ def _job_entries(source: Job, keep_ramza_command: bool = False) -> list[dict[str
     return entries
 
 
+def _extend_flags(ids: list[int], prefix: str) -> str:
+    """
+    Flags de id estendido (>= 256) no formato do modloader ("ExtendedAbility7,
+    ExtendRSMId1"...). O loader recalcula a partir dos ids, mas o setter dele
+    lê o campo antes disso e quebra ("Could not assign to the property
+    'AbilityId1'") se o elemento não estiver no XML. Por isso vai sempre.
+    """
+    flags = [f"{prefix}{i + 1}" for i, ab_id in enumerate(ids) if ab_id >= 256]
+    return ", ".join(flags) or "0"
+
+
 def _command_entries(custom: CustomClass) -> list[dict[str, str]]:
     """Os três skillsets do Ramza com a lista da classe customizada (slots vazios = 0)."""
+    actions = [custom.actions[i] if i < len(custom.actions) else 0 for i in range(MAX_ACTIONS)]
+    rsm = [custom.rsm[i] if i < len(custom.rsm) else 0 for i in range(MAX_RSM)]
     entries = []
     for cmd_id in sorted(RAMZA_COMMAND_IDS.values()):
-        entry = {"Id": str(cmd_id)}
-        for i in range(MAX_ACTIONS):
-            entry[f"AbilityId{i + 1}"] = str(custom.actions[i] if i < len(custom.actions) else 0)
-        for i in range(MAX_RSM):
-            entry[f"ReactionSupportMovementId{i + 1}"] = str(custom.rsm[i] if i < len(custom.rsm) else 0)
+        entry = {
+            "Id": str(cmd_id),
+            "ExtendAbilityIdFlagBits": _extend_flags(actions, "ExtendedAbility"),
+            "ExtendReactionSupportMovementIdFlagBits": _extend_flags(rsm, "ExtendRSMId"),
+        }
+        for i, ab_id in enumerate(actions):
+            entry[f"AbilityId{i + 1}"] = str(ab_id)
+        for i, ab_id in enumerate(rsm):
+            entry[f"ReactionSupportMovementId{i + 1}"] = str(ab_id)
         entries.append(entry)
     return entries
 

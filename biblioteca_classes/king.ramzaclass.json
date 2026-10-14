@@ -1,0 +1,67 @@
+{
+  "format": "soloramza-class",
+  "version": 2,
+  "app_version": "0.3.0",
+  "name": "King",
+  "skillset": "Holy Sword",
+  "author": "Solo Ramza Manager",
+  "description": "Delita as King of Ivalice (Chapter 4). Holy Knight stats raised to the game's hidden King job, with Holy Sword and the Crush arts. Pair with the King Delita sprite.",
+  "base_job": 5,
+  "actions": [
+    155,
+    156,
+    157,
+    158,
+    159,
+    45,
+    160,
+    161,
+    162,
+    163
+  ],
+  "rsm": [
+    442,
+    463,
+    465,
+    475,
+    476,
+    486
+  ],
+  "job": {
+    "equip": [
+      "Unarmed",
+      "Knife",
+      "Sword",
+      "KnightSword",
+      "Flail",
+      "Shield",
+      "Helmet",
+      "HairAdornment",
+      "Armor",
+      "Robe",
+      "Shoes",
+      "Armguard",
+      "Ring",
+      "Armlet",
+      "Cloak",
+      "Perfume"
+    ],
+    "multipliers": {
+      "HP": 150,
+      "MP": 100,
+      "Speed": 120,
+      "PA": 120,
+      "MA": 110
+    },
+    "growths": {
+      "HP": 10,
+      "MP": 11,
+      "Speed": 100,
+      "PA": 50,
+      "MA": 50
+    },
+    "move": 4,
+    "jump": 3,
+    "evasion": 15
+  }
+}
